@@ -42,6 +42,7 @@ class PDOMySql extends ADatabase
         }
 		//开始连接
 		try{
+            $this->config['params'] = isset($this->config['params']) ? $this->config['params'] : array(); 
 			$this->link = new PDO('mysql:host='.$this->config['hostname'].';dbname='.$this->config['database'], $this->config['username'], $this->config['password'], $this->config['params']);
 		} catch (PDOException $e){
 			return $this->throw_exception($e->getMessage());
