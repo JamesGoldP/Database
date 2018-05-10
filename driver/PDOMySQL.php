@@ -121,9 +121,28 @@ class PDOMySql extends ADatabase
 			return $this->throw_exception('sql不能为空');
 		}
 		$this->query($sql);
-		$result = $this->statement->fetch($type);
+		$result = $this->fetch($type);
 		return $result;	
-	}	
+	}
+
+    /**
+     * 查询一条记录获取类型
+     *
+     * @param constant $type 返回结果集类型    
+     *                  MYSQL_ASSOC，MYSQL_NUM 和 MYSQL_BOTH
+     * 
+     * @return array or false
+     * 
+     */
+    public function fetch($type = PDO::FETCH_ASSOC ){
+        $res = $this->statement->fetch($type);
+        //如果查询失败，返回False,那么释放改资源
+        if(!$res){
+            $this->free();
+        }
+        return $res; 
+    }
+
 
     /**
      * 释放不需要的statement

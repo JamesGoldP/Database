@@ -48,6 +48,25 @@ abstract class ADatabase
      */
     abstract public function insert_id();
 
+    /**
+     * 查询一条记录获取类型
+     *
+     * @param constant $type 返回结果集类型    
+     *                  
+     * 
+     * @return array or false
+     * 
+     */
+    abstract public function fetch($type = MYSQLI_ASSOC );
+
+    /**
+     * 
+     * 释放查询资源
+     * 
+     * 
+     */
+    abstract protected function free();
+
    /** 
      *  表中插入数据
      * 

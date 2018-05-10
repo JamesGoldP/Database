@@ -1,4 +1,7 @@
 <?php
+
+namespace driver;
+
 /**
  * 数据库CURD类.
  *
@@ -40,7 +43,7 @@ class MySQL extends ADatabase
         if (!is_resource($this->link)) {
             //是否长连接
             $func = $this->config['pconnect'] ? 'mysql_pconnect' : 'mysql_connect';
-            $this->link = @$func($this->config['hostname'], $this->config['username'], $this->config['password']);
+            $this->link = $func($this->config['hostname'], $this->config['username'], $this->config['password']);
             if (mysql_select_db($this->config['database'])) {
                 mysql_query('set names '.$this->config['charset']);
             } else {
@@ -117,7 +120,7 @@ class MySQL extends ADatabase
         $res = mysql_fetch_array($this->lastqueryid, $type);
         //如果查询失败，返回False,那么释放改资源
         if(!$res){
-            $this->free_result();
+            $this->free();
         }
         return $res; 
     }
@@ -128,7 +131,7 @@ class MySQL extends ADatabase
      * 
      * 
      */
-    public function free_result(){
+    public function free(){
        if( is_resource($this->lastqueryid) ){
             mysql_free_result($this->lastqueryid);
        } 
@@ -256,8 +259,9 @@ class MySQL extends ADatabase
      */
     public function close()
     {
+        mysql_close($this->link);
         if(is_resource($this->link)){
-            @mysql_close($this->link);
+            mysql_close($this->link);
         }
     }
 }

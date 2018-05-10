@@ -1,5 +1,6 @@
 <?php
 namespace driver;
+
 /**
  * 数据库CURD类.mysqli for procedural
  *
@@ -9,8 +10,6 @@ namespace driver;
  */
 class MySQLiProcedural extends ADatabase
 {
-
-    private $link;   //数据库连接资源
 
     private $result;  //最近数据库查询资源
 
@@ -115,7 +114,7 @@ class MySQLiProcedural extends ADatabase
         $res = mysqli_fetch_array($this->result, $type);
         //如果查询失败，返回False,那么释放改资源
         if(!$res){
-            $this->free_result();
+            $this->free();
         }
         return $res; 
     }
@@ -126,7 +125,7 @@ class MySQLiProcedural extends ADatabase
      * 
      * 
      */
-    public function free_result(){
+    public function free(){
        $this->result = NULL;
     }
 

@@ -1,11 +1,15 @@
 <?php
+namespace driver;
+
+
 /**
- * 数据库CURD类.mysqli for procedural
+ * 数据库CURD类.mysqli
  *
  * @author  Nezumi
  *
  * 
  */
+
 class MySQLi extends ADatabase
 {
 
@@ -37,7 +41,7 @@ class MySQLi extends ADatabase
      */
     public function connect()
     {
-        $this->link = new mysqli($this->config['hostname'], $this->config['username'], $this->config['password'], $this->config['database']);
+        $this->link = new \mysqli($this->config['hostname'], $this->config['username'], $this->config['password'], $this->config['database']);
         if( $this->link->connect_error ){
             return $this->throw_exception('连接数据库失败');
         }
@@ -113,7 +117,7 @@ class MySQLi extends ADatabase
         $res = $this->result->fetch_array($type);
         //如果查询失败，返回False,那么释放改资源
         if(!$res){
-            $this->free_result();
+            $this->free();
         }
         return $res; 
     }
@@ -124,7 +128,7 @@ class MySQLi extends ADatabase
      * 
      * 
      */
-    public function free_result(){
+    public function free(){
        $this->result = NULL;
     }
 
