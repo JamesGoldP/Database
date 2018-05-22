@@ -1,20 +1,17 @@
 <?php
-namespace driver;
-
+namespace mysql;
 
 /**
- * 数据库CURD类.mysqli
+ * 数据库CURD类.mysqli for procedural
  *
  * @author  Nezumi
  *
  * 
  */
-
-class MySQLi extends ADatabase
+class MySQLiProcedural extends ADatabase
 {
 
     private $result;  //最近数据库查询资源
-
 
     /**
      *  是否自动连接,入口
@@ -41,11 +38,11 @@ class MySQLi extends ADatabase
      */
     public function connect()
     {
-        $this->link = new \mysqli($this->config['hostname'], $this->config['username'], $this->config['password'], $this->config['database']);
+        $this->link = mysqli_connect($this->config['hostname'], $this->config['username'], $this->config['password'], $this->config['database']);
         if( $this->link->connect_error ){
             return $this->throw_exception('连接数据库失败');
         }
-        if( !$this->link->set_charset($this->config['charset']) ){
+        if( !mysqli_set_charset($this->link, $this->config['charset']) ){
             return $this->throw_exception('设置默认字符编码失败');
         }
         return $this->link; 
@@ -68,7 +65,7 @@ class MySQLi extends ADatabase
         if (!is_resource($this->link)) {
             $this->connect();
         }
-        $this->result = $this->link->query($sql);
+        $this->result = mysqli_query($this->link,$sql);
         return $this->result; 
     }
 
@@ -114,7 +111,7 @@ class MySQLi extends ADatabase
      * 
      */
     public function fetch($type = MYSQLI_ASSOC ){
-        $res = $this->result->fetch_array($type);
+        $res = mysqli_fetch_array($this->result, $type);
         //如果查询失败，返回False,那么释放改资源
         if(!$res){
             $this->free();
@@ -143,7 +140,7 @@ class MySQLi extends ADatabase
     public function total_record($table)
     {
         $this->result = $this->query('select * from'.$table);
-        return $this->result->num_rows;
+        return mysqli_num_rows($this->result);
     }
 
     /**
@@ -154,7 +151,7 @@ class MySQLi extends ADatabase
      */
     public function affected_rows()
     {
-        return $this->link->affected_rows;
+        return mysqli_affected_rows($this->link);
     }
 
     /**
@@ -165,7 +162,7 @@ class MySQLi extends ADatabase
      */
     public function insert_id()
     {
-        return $this->link->insert_id;
+        return mysqli_insert_id($this->link);
     }
 
    /**
@@ -244,9 +241,8 @@ class MySQLi extends ADatabase
      */
     public function serverinfo()
     {
-        return $this->link->server_info;
+        return mysqli_get_server_info($this->link);
     }
-
 
     /**
      * 关闭连接
@@ -255,7 +251,7 @@ class MySQLi extends ADatabase
     public function close()
     {
         if(is_resource($this->link)){
-            $this->link->close();
+            mysqli_close($this->link);
         }
     }
 

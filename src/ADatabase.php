@@ -1,5 +1,5 @@
 <?php
-namespace driver;
+namespace mysql;
 
 abstract class ADatabase
 {

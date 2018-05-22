@@ -1,5 +1,5 @@
 <?php
-namespace driver;
+namespace mysql;
 
 use PDO;
 

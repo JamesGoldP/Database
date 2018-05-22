@@ -1,0 +1,12 @@
+{
+    "name": "yilongpeng/mysql",
+    "description": "A database framework",
+    "require": {
+		"php": ">=5.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "mysql\\": "src/"
+        }
+    }
+}

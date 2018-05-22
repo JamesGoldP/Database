@@ -1,17 +1,19 @@
 <?php
-namespace driver;
+
+namespace mysql;
 
 /**
- * 数据库CURD类.mysqli for procedural
+ * 数据库CURD类.
  *
  * @author  Nezumi
  *
  * 
  */
-class MySQLiProcedural extends ADatabase
+class MySQL extends ADatabase
 {
 
-    private $result;  //最近数据库查询资源
+    private $lastqueryid;  //最近数据库查询资源
+ 
 
     /**
      *  是否自动连接,入口
@@ -24,7 +26,7 @@ class MySQLiProcedural extends ADatabase
         }
         $this->config = $config;
         if( $this->config['autoconnect'] ){
-            return $this->connect();
+            $this->connect();
         }
     }
 
@@ -38,12 +40,15 @@ class MySQLiProcedural extends ADatabase
      */
     public function connect()
     {
-        $this->link = mysqli_connect($this->config['hostname'], $this->config['username'], $this->config['password'], $this->config['database']);
-        if( $this->link->connect_error ){
-            return $this->throw_exception('连接数据库失败');
-        }
-        if( !mysqli_set_charset($this->link, $this->config['charset']) ){
-            return $this->throw_exception('设置默认字符编码失败');
+        if (!is_resource($this->link)) {
+            //是否长连接
+            $func = $this->config['pconnect'] ? 'mysql_pconnect' : 'mysql_connect';
+            $this->link = $func($this->config['hostname'], $this->config['username'], $this->config['password']);
+            if (mysql_select_db($this->config['database'])) {
+                mysql_query('set names '.$this->config['charset']);
+            } else {
+                return $this->throw_exception('不能选择数据库');
+            }
         }
         return $this->link; 
     }
@@ -65,9 +70,10 @@ class MySQLiProcedural extends ADatabase
         if (!is_resource($this->link)) {
             $this->connect();
         }
-        $this->result = mysqli_query($this->link,$sql);
-        return $this->result; 
+        $this->lastqueryid = mysql_query($sql, $this->link);
+        return $this->lastqueryid; 
     }
+
 
     /**
      * 查询多条记录.
@@ -110,8 +116,8 @@ class MySQLiProcedural extends ADatabase
      * @return array or false
      * 
      */
-    public function fetch($type = MYSQLI_ASSOC ){
-        $res = mysqli_fetch_array($this->result, $type);
+    public function fetch($type = MYSQL_ASSOC ){
+        $res = mysql_fetch_array($this->lastqueryid, $type);
         //如果查询失败，返回False,那么释放改资源
         if(!$res){
             $this->free();
@@ -126,8 +132,11 @@ class MySQLiProcedural extends ADatabase
      * 
      */
     public function free(){
-       $this->result = NULL;
+       if( is_resource($this->lastqueryid) ){
+            mysql_free_result($this->lastqueryid);
+       } 
     }
+
 
     /**
      * 查询表的总记录条数 total_record(表名)
@@ -139,8 +148,8 @@ class MySQLiProcedural extends ADatabase
      */
     public function total_record($table)
     {
-        $this->result = $this->query('select * from'.$table);
-        return mysqli_num_rows($this->result);
+        $total_recordque = $this->query('select * from'.$table);
+        return mysql_num_rows($total_recordque);
     }
 
     /**
@@ -151,7 +160,7 @@ class MySQLiProcedural extends ADatabase
      */
     public function affected_rows()
     {
-        return mysqli_affected_rows($this->link);
+        return mysql_affected_rows($this->link);
     }
 
     /**
@@ -162,10 +171,10 @@ class MySQLiProcedural extends ADatabase
      */
     public function insert_id()
     {
-        return mysqli_insert_id($this->link);
+        return mysql_insert_id($this->link);
     }
 
-   /**
+    /**
      * 通过sql语句得到的值显示成表格
      * 
      * @param string $sql 
@@ -241,7 +250,7 @@ class MySQLiProcedural extends ADatabase
      */
     public function serverinfo()
     {
-        return mysqli_get_server_info($this->link);
+        return mysql_get_server_info($this->link);
     }
 
     /**
@@ -250,9 +259,9 @@ class MySQLiProcedural extends ADatabase
      */
     public function close()
     {
+        mysql_close($this->link);
         if(is_resource($this->link)){
-            mysqli_close($this->link);
+            mysql_close($this->link);
         }
     }
-
 }
