@@ -1,9 +1,17 @@
 {
-    "name": "yilongpeng/mysql",
+    "name": "yilong/mysql",
     "description": "A database framework",
     "require": {
 		"php": ">=5.4"
     },
+    "authors": [
+        {
+            "name": "Yilong Peng",
+            "homepage": "https://github.com/YilongPeng",
+            "email": "948800401@qq.com",
+            "role": "Developer"
+        }
+    ],
     "autoload": {
         "psr-4": {
             "mysql\\": "src/"

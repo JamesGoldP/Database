@@ -12,6 +12,7 @@ class Loader
 		}
 
 		$file = './'.str_replace('\\', DIRECTORY_SEPARATOR, $class).'.php';
+		$file = str_replace('/mysql/', '/src/', $file);
 		if( file_exists($file) ){
 			include $file;
 			self::$classMap[$class] = $class;
