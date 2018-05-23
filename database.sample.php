@@ -11,5 +11,5 @@ return array (
 		'debug' => true,
 		'pconnect' => 0,
 		'autoconnect' => 0
-		),
+	),
 );

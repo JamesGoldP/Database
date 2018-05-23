@@ -1,5 +1,5 @@
 {
-    "name": "yilong/mysql",
+    "name": "yilongpeng/mysql",
     "description": "A database framework",
     "require": {
 		"php": ">=5.4"
