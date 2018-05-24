@@ -1,14 +1,17 @@
  Database connection classes for mysql.(mysql,mysqli,pdo)
 
-## Get Started
+ [![Latest Stable Version](https://poser.pugx.org/yilongpeng/mysql/v/stable)](https://packagist.org/packages/yilongpeng/mysql)
 
-1. Use [composer](http://getcomposer.org) to install yilong/mysql in your project:
+
+## Installation
+
+Use [composer](http://getcomposer.org) to install yilong/mysql in your project:
 ```
-composer require yilong/mysql
+composer require yilongpeng/mysql
 ```
 
 
-2. Usage
+## Usage
 ```php
 use mysql\MySQLi;
 

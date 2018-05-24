@@ -1,6 +1,4 @@
 <?php
-namespace Database;
-
 class Loader
 {
 	static $classMap = array();  //要加载的类
