@@ -1,7 +1,6 @@
 <?php
 namespace mysql;
 
-
 /**
  * 数据库CURD类.mysqli
  *
@@ -23,7 +22,8 @@ class MySQLi extends ADatabase
     public function open($config)
     {
         if(empty($config)){
-            return $this->throw_exception('没有定义数据库配置');
+            $this->error = '没有定义数据库配置';
+            return false;
         }
         $this->config = $config;
         if( $this->config['autoconnect'] ){
@@ -43,10 +43,12 @@ class MySQLi extends ADatabase
     {
         $this->link = new \mysqli($this->config['hostname'], $this->config['username'], $this->config['password'], $this->config['database']);
         if( $this->link->connect_error ){
-            return $this->throw_exception('连接数据库失败');
+            $this->error = '连接数据库失败';
+            return false;
         }
         if( !$this->link->set_charset($this->config['charset']) ){
-            return $this->throw_exception('设置默认字符编码失败');
+            $this->error = '设置默认字符编码失败';
+            return false;
         }
         return $this->link; 
     }
@@ -69,6 +71,10 @@ class MySQLi extends ADatabase
             $this->connect();
         }
         $this->result = $this->link->query($sql);
+        if( $this->result === FALSE ){
+            $this->error = 'SQL ERROR:'. $sql;
+            return false;
+        }
         return $this->result; 
     }
 
@@ -82,7 +88,10 @@ class MySQLi extends ADatabase
      */
     public function fetch_all($sql) 
     {
-        $this->query($sql);
+        $query = $this->query($sql);
+        if( $this->result === FALSE ){
+            return false;
+        }
         $result = array();
         while ($row = $this->fetch()) {
             $result[] = $row;
@@ -101,6 +110,9 @@ class MySQLi extends ADatabase
     public function fetch_one($sql) 
     {
         $this->query($sql);
+        if( $this->result === FALSE ){
+            return false;
+        }
         return $this->fetch();
     }
 
@@ -259,4 +271,11 @@ class MySQLi extends ADatabase
         }
     }
 
+    /**
+     * get the inner error info.
+     */
+    public function get_error()
+    {
+        return array($this->link->errno=>$this->link->error);
+    }
 }

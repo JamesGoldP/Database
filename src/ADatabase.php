@@ -4,17 +4,18 @@ namespace mysql;
 abstract class ADatabase
 {
 
-    protected $link;   //数据库连接资源
-    protected $config; //数据库连接信息
-
+    protected $link;   //The databse connection resource
+    protected $config; //The databse connection configuration
+    protected $error;  //The database conntion error
+    
     /**
-     *  是否自动连接,入口
+     *  Whether auto conntction
      * 
      */
     abstract public function open($config);
 
     /**
-     * 连接数据库方法
+     * The databse connection method
      * 
      * @access public
      * 
@@ -22,8 +23,9 @@ abstract class ADatabase
      * 
      */
     abstract public function connect();
+    
     /**
-     * sql执行
+     * exectutes sql
      * 
      * @param string $sql 
      * 
@@ -66,6 +68,17 @@ abstract class ADatabase
      * 
      */
     abstract protected function free();
+    
+    /**
+     * close connection
+     * @return type
+     */
+    abstract protected function close();
+
+    /**
+     * get the inner error info.
+     */
+    abstract protected function get_error();
 
    /** 
      *  表中插入数据
@@ -84,7 +97,8 @@ abstract class ADatabase
     public function insert( $data, $table, $return_insert_id = false, $replace = false )
     {
         if (empty($data)) {
-            return $this->throw_exception('To insert array is required!');
+            $this->error = 'The insert array is required!';
+            return false;
         }
         $fields = array_keys($data);
         $values = array_values($data);
@@ -101,7 +115,7 @@ abstract class ADatabase
     }
 
     /**
-     *  表中更新数据
+     *  Update data from the table
      *
      *  @access public
      *  @author  Nezumi
@@ -116,9 +130,11 @@ abstract class ADatabase
     public function update($data, $table, $where, $return_affected_rows = false)
     {
         if (empty($data)) {
-            return $this->throw_exception('To update array is required!');
+            $this->error = 'To update array is required!';
+            return false;
         } else if (empty($where)) {
-            return $this->throw_exception('The condition is required.');
+            $this->error = 'The condition is required.';
+            return false;
         }
         $data_sql = '';  //更新sql
         //判断条件是否为空
@@ -172,7 +188,7 @@ abstract class ADatabase
     }
 
     /**
-     *  Delete Datas
+     *  Deletes Data
      *
      *  @param  string $$talbe
      * 
@@ -182,7 +198,8 @@ abstract class ADatabase
     public function delete($table, $where)
     {
         if( empty($where) ){
-            return $this->throw_exception('The condition is required.');
+            $this->error = 'The condition is required.';
+            return false;
         }
         $sql = 'DELETE FROM  '.$table.$this->parse_where($where);
         return $this->query($sql);
@@ -394,11 +411,14 @@ abstract class ADatabase
      * @param string $sql 
      * @return boolean
      */
-    public function throw_exception($errMsg = '' , $sql = '')
+    public function throw_exception()
     {
         if( $this->config['debug'] ){
-            $output = ''; 
-            echo $sql.$errMsg;
+            if( !empty($this->error) ){
+                return $this->error;
+            } else {
+                return $this->get_error();
+            }
         }
         return false;
     }

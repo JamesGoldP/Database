@@ -23,7 +23,8 @@ class PDOMySql extends ADatabase
     public function open($config)
     {
         if(empty($config)){
-            return $this->throw_exception('没有定义数据库配置');
+            $this->error = '没有定义数据库配置';
+            return false;
         }
         $this->config = $config;
         if( $this->config['autoconnect'] ){
@@ -34,7 +35,8 @@ class PDOMySql extends ADatabase
 	public function connect(){
 		//检查pdo类是否可用
 		if(!class_exists('PDO')){
-			return $this->throw_exception('不支持PDO，请先开启');
+			$this->error = '不支持PDO，请先开启';
+            return false;
 		}
 		//是否长连接
         if( $this->config['pconnect'] ){
@@ -45,7 +47,8 @@ class PDOMySql extends ADatabase
             $this->config['params'] = isset($this->config['params']) ? $this->config['params'] : array(); 
 			$this->link = new PDO('mysql:host='.$this->config['hostname'].';dbname='.$this->config['database'], $this->config['username'], $this->config['password'], $this->config['params']);
 		} catch (PDOException $e){
-			return $this->throw_exception($e->getMessage());
+			$this->error = $e->getMessage();
+            return false;
 		}
         $this->link->exec('SET NAMES '.$this->config['charset']);
 	    return $this->link;		
@@ -55,7 +58,8 @@ class PDOMySql extends ADatabase
     public function query($sql)
     {
         if($sql==''){
-            return $this->throw_exception('sql不能为空');
+            $this->error = 'sql不能为空';
+            return false;
         }
         if( !$this->link ){
             $this->connect();
@@ -76,7 +80,8 @@ class PDOMySql extends ADatabase
     public function execute($sql)
     {
         if($sql==''){
-            return $this->throw_exception('sql不能为空');
+            $this->error = 'sql不能为空';
+            return false;
         }
         if( !$this->link ){
             $this->connect();
@@ -119,7 +124,8 @@ class PDOMySql extends ADatabase
      */
 	public function fetch_one($sql, $type = PDO::FETCH_ASSOC) {
     	if($sql==''){
-			return $this->throw_exception('sql不能为空');
+			$this->error = 'sql不能为空';
+            return false;
 		}
 		$this->query($sql);
 		$result = $this->fetch($type);
@@ -185,5 +191,11 @@ class PDOMySql extends ADatabase
         $this->link = NULL;
     }
 
-
+    /**
+     * get the inner error info.
+     */
+    public function get_error()
+    {
+        return array($this->link->errorCode()=>$this->link->errorInfo());
+    }
 }

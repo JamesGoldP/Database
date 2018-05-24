@@ -22,7 +22,8 @@ class MySQL extends ADatabase
     public function open($config)
     {
         if(empty($config)){
-            return $this->throw_exception('没有定义数据库配置');
+            $this->error = '没有定义数据库配置';
+            return false;
         }
         $this->config = $config;
         if( $this->config['autoconnect'] ){
@@ -47,7 +48,8 @@ class MySQL extends ADatabase
             if (mysql_select_db($this->config['database'])) {
                 mysql_query('set names '.$this->config['charset']);
             } else {
-                return $this->throw_exception('不能选择数据库');
+                $this->error = '不能选择数据库';
+                return false;
             }
         }
         return $this->link; 
@@ -71,6 +73,10 @@ class MySQL extends ADatabase
             $this->connect();
         }
         $this->lastqueryid = mysql_query($sql, $this->link);
+        if( $this->lastqueryid === FALSE ){
+            $this->error = 'SQL ERROR:'.$sql;
+            return false;
+        }
         return $this->lastqueryid; 
     }
 
@@ -86,6 +92,9 @@ class MySQL extends ADatabase
     public function fetch_all($sql) 
     {
         $this->query($sql);
+        if( $this->lastqueryid === FALSE ){
+            return false;
+        }
         $result = array();
         while ($row = $this->fetch()) {
             $result[] = $row;
@@ -104,6 +113,9 @@ class MySQL extends ADatabase
     public function fetch_one($sql) 
     {
         $this->query($sql);
+        if( $this->lastqueryid === FALSE ){
+            return false;
+        }
         return $this->fetch();
     }
 
@@ -263,5 +275,10 @@ class MySQL extends ADatabase
         if(is_resource($this->link)){
             mysql_close($this->link);
         }
+    }
+
+    public function get_error()
+    {
+        return array(mysql_errno($this->link)=>mysql_error($this->link));
     }
 }
