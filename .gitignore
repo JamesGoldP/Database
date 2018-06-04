@@ -1,1 +1,4 @@
-database.php
+/database.php
+.php_cs.cache
+/vendor
+.DS_Store

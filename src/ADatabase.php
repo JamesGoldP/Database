@@ -1,5 +1,5 @@
 <?php
-namespace mysql;
+namespace yilongpeng;
 
 abstract class ADatabase
 {

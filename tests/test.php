@@ -1,11 +1,11 @@
 <?php
 error_reporting(-1);
-include './Loader.php';
-spl_autoload_register('Database\Loader::_autoload');
+include '../Loader.php';
+spl_autoload_register('Loader::_autoload');
 
 //load config
-$config = include './database.php';
-$mysql = new driver\PDOMySQL();
+$config = include '../database.php';
+$mysql = new yilongpeng\PDOMySQL();
 $link =  $mysql->open($config['master']);
 
 // D

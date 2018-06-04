@@ -1,14 +1,6 @@
 <?php
+namespace yilongpeng;
 
-namespace mysql;
-
-/**
- * 数据库CURD类.
- *
- * @author  Nezumi
- *
- * 
- */
 class MySQL extends ADatabase
 {
 

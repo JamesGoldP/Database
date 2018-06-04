@@ -1,15 +1,8 @@
 <?php
-namespace mysql;
+namespace yilongpeng;
 
 use PDO;
 
-/**
- * 数据库CURD类.
- *
- * @author  Nezumi
- *
- * 
- */
 class PDOMySql extends ADatabase
 {
 

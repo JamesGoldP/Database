@@ -1,6 +1,6 @@
 {
     "name": "yilongpeng/mysql",
-    "description": "A database framework",
+    "description": "the database driver",
     "require": {
 		"php": ">=5.4"
     },
@@ -14,7 +14,7 @@
     ],
     "autoload": {
         "psr-4": {
-            "mysql\\": "src/"
+            "yilongpeng\\": "src/"
         }
     }
 }

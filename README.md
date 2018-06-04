@@ -13,7 +13,7 @@ composer require yilongpeng/mysql
 
 ## Usage
 ```php
-use mysql\MySQLi;
+use yilongpeng\MySQLi;
 
 //load config
 $config = include './database.php';
