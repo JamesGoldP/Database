@@ -1,19 +1,17 @@
- Database connection classes for mysql.(mysql,mysqli,pdo)
-
- [![Latest Stable Version](https://poser.pugx.org/yilongpeng/mysql/v/stable)](https://packagist.org/packages/yilongpeng/mysql)
+Database connection classes for mysql.(mysql,mysqli,pdo)
 
 
 ## Installation
 
-Use [composer](http://getcomposer.org) to install yilong/mysql in your project:
+Use [composer](http://getcomposer.org) to install Nezumi/mysql in your project:
 ```
-composer require yilongpeng/mysql
+composer require Nezumi/mysql
 ```
 
 
 ## Usage
 ```php
-use yilongpeng\MySQLi;
+use Nezumi\MySQLi;
 
 //load config
 $config = include './database.php';

@@ -1,5 +1,5 @@
 <?php
-namespace yilongpeng;
+namespace Nezumi;
 
 class MySQL extends ADatabase
 {

@@ -1,5 +1,5 @@
 <?php
-namespace yilongpeng;
+namespace Nezumi;
 
 abstract class ADatabase
 {

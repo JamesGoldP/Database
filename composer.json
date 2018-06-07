@@ -1,5 +1,5 @@
 {
-    "name": "yilongpeng/mysql",
+    "name": "nezumi/mysql",
     "description": "the database driver",
     "require": {
 		"php": ">=5.4"
@@ -14,7 +14,7 @@
     ],
     "autoload": {
         "psr-4": {
-            "yilongpeng\\": "src/"
+            "Nezumi\\": "src/"
         }
     }
 }

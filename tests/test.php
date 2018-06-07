@@ -2,10 +2,11 @@
 error_reporting(-1);
 include '../Loader.php';
 spl_autoload_register('Loader::_autoload');
+use Nezumi\PDOMySQL;
 
 //load config
 $config = include '../database.php';
-$mysql = new yilongpeng\PDOMySQL();
+$mysql = new PDOMySQL();
 $link =  $mysql->open($config['master']);
 
 // D
