@@ -179,44 +179,6 @@ class MySQL extends ADatabase
     }
 
     /**
-     * 通过sql语句得到的值显示成表格
-     * 
-     * @param string $sql 
-     * 
-     * @return string
-     * 
-     */
-    public function display_table($sql)
-    {
-        $display_que = $this->query($table);
-        while ($display_arr = $this->fetch()) {
-            $display_result[] = $display_arr;
-        }
-        $display_out = '';
-        $display_out .= '<table border=1><tr>';
-        foreach ($display_result as $display_key => $display_val) {
-            if (0 == $display_key) {
-                foreach ($display_val as $display_ky => $display_vl) {
-                    $display_out .= "<td>$display_ky</td>";
-                }
-            } else {
-                break;
-            }
-        }
-        $display_out .= '</tr>';
-        foreach ($display_result as $display_k => $display_v) {
-            $display_out .= '<tr>';
-            foreach ($display_v as $display_kid => $display_vname) {
-                $display_out .= "<td> &nbsp;$display_vname</td>";
-            }
-            $display_out .= '</tr>';
-        }
-        $display_out .= '</table>';
-
-        return $display_out;
-    }
-
-    /**
      * 显示表配置信息(表引擎)
      * 
      * @param string $table 

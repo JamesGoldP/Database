@@ -405,6 +405,37 @@ abstract class ADatabase
         return $value; 
     }
 
+   /**
+     * 
+     * data to table
+     * 
+     * @param string $sql 
+     * 
+     * @return string
+     * 
+     */
+    public function display_table($data)
+    {
+        $out = '';
+        $out .= '<table border=1><tr>';
+        foreach ($data[0] as $key => $value) {
+            $out .= "<td>$key</td>";
+        }
+           
+        $out .= '</tr>';
+        foreach ($data as $key => $value) {
+            $out .= '<tr>';
+            foreach ($value as $k => $v) {
+                $out .= '<td> &nbsp;'.$v.'</td>';
+            }
+            $out .= '</tr>';
+        }
+        $out .= '</table>';
+
+        return $out;
+    }
+
+
     /**
      * 如果调试的话输出错误信息
      * @param string $errMsg 
