@@ -4,13 +4,12 @@ namespace Nezumi;
 class MySQL extends ADatabase
 {
 
-    private $lastqueryid;  //最近数据库查询资源
+    /**
+     * @var 最近数据库查询资源
+     */
+    private $lastqueryid;
  
 
-    /**
-     *  是否自动连接,入口
-     * 
-     */
     public function open($config)
     {
         if(empty($config)){
@@ -23,14 +22,6 @@ class MySQL extends ADatabase
         }
     }
 
-    /**
-     * 连接数据库方法
-     * 
-     * @access public
-     * 
-     * @return resource
-     * 
-     */
     public function connect()
     {
         if (!is_resource($this->link)) {

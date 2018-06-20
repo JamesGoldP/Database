@@ -1,18 +1,32 @@
 <?php
 namespace Nezumi;
 
-abstract class ADatabase
+class ADatabase
 {
 
-    protected $link;   //The databse connection resource
-    protected $config; //The databse connection configuration
-    protected $error;  //The database conntion error
+    /**
+     * @var databse connection resource
+     */
+    protected $link;  
+
+    /**
+     * @var databse connection configuration
+     */
+    protected $config;
+
+    /**
+     * @var database conntion error
+     */
+    protected $error;
     
     /**
      *  Whether auto conntction
      * 
      */
-    abstract public function open($config);
+    public function open($config)
+    {
+        
+    }
 
     /**
      * The databse connection method
@@ -22,7 +36,10 @@ abstract class ADatabase
      * @return resource
      * 
      */
-    abstract public function connect();
+    public function connect()
+    {
+
+    }
     
     /**
      * exectutes sql
@@ -32,7 +49,10 @@ abstract class ADatabase
      * @return resource or false
      * 
      */
-    abstract public function query($sql);
+    public function query($sql)
+    {
+
+    }
 
     /**
      * 获取sql在数据库影响的条数
@@ -40,7 +60,10 @@ abstract class ADatabase
      * @return int
      * 
      */
-    abstract public function affected_rows();
+    public function affected_rows()
+    {
+
+    }
 
     /**
      * 取得上一步 INSERT 操作表产生的auto_increment,就是自增主键
@@ -48,7 +71,10 @@ abstract class ADatabase
      * @return int
      * 
      */
-    abstract public function insert_id();
+    public function insert_id()
+    {
+
+    }
 
     /**
      * 查询一条记录获取类型
@@ -59,7 +85,10 @@ abstract class ADatabase
      * @return array or false
      * 
      */
-    abstract public function fetch($type = MYSQLI_ASSOC );
+    public function fetch($type = MYSQLI_ASSOC )
+    {
+
+    }
 
     /**
      * 
@@ -67,18 +96,27 @@ abstract class ADatabase
      * 
      * 
      */
-    abstract protected function free();
+    protected function free()
+    {
+
+    }
     
     /**
      * close connection
      * @return type
      */
-    abstract protected function close();
+    protected function close()
+    {
+
+    }
 
     /**
      * get the inner error info.
      */
-    abstract protected function get_error();
+    protected function get_error()
+    {
+
+    }
 
    /** 
      *  表中插入数据

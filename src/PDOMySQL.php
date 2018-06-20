@@ -6,7 +6,10 @@ use PDO;
 class PDOMySql extends ADatabase
 {
 
-    private $statement;  //最近数据库查询资源
+    /**
+     * @var 最近数据库查询资源
+     */
+    private $statement;
  
 
     /**
