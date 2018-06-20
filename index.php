@@ -1,13 +1,14 @@
 <?php
 include './Loader.php';
 spl_autoload_register('Loader::_autoload');
-use Nezumi\PDOMySQL;
+use Nezumi\MySQLi;
 
 //load config
-$config = include './database.php';
+$config = include './configs/database.php';
 
-$mysql = new PDOMySQL();
+$mysql = new MySQLi();
 $mysql->open($config['master']);
-$result = $mysql->select('*', 'cms_category');
+// $result = $mysql->select('*', 'cms_category');
 echo '<pre>';
+$result = $mysql->fields('*')->table('cms_category')->select();
 print_r($result);

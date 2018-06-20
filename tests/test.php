@@ -5,7 +5,7 @@ spl_autoload_register('Loader::_autoload');
 use Nezumi\PDOMySQL;
 
 //load config
-$config = include '../database.php';
+$config = include '../configs/database.php';
 $mysql = new PDOMySQL();
 $link =  $mysql->open($config['master']);
 

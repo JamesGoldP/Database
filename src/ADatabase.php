@@ -18,7 +18,70 @@ class ADatabase
      * @var database conntion error
      */
     protected $error;
-    
+
+    /**
+     * @var string
+     */
+    public $options = [
+        'fields' => '',
+        'table' => '',
+        'join' => '',
+        'where' => '',
+        'group' => '',
+        'having' => '',
+        'order' => '',
+        'limit' => '',
+    ];
+
+
+    public function fields($argument)
+    {
+        $this->options['fields'] = $this->parse_fields($argument);
+        return $this;
+    }
+
+    public function table($argument)
+    {
+        $this->options['table'] = $argument;
+        return $this;
+    }
+
+    public function join($argument)
+    {
+        $this->options['join'] = 'LEFT JOIN '.$argument;
+        return $this;       
+    }
+
+    public function where($argument)
+    {
+        $this->options['fields'] = $this->parse_where($argument);
+        return $this;
+    }
+
+    public function group($argument)
+    {
+        $this->options['group'] = $this->parse_group($argument);
+        return $this;
+    }
+
+    public function having($argument)
+    {
+        $this->options['having'] = $this->parse_having($argument);
+        return $this;
+    }
+
+    public function order($argument)
+    {
+        $this->options['order'] = $this->parse_order($argument);
+        return $this;
+    }
+
+    public function limit($argument)
+    {
+        $this->options['limit'] = $this->parse_limit($argument);
+        return $this;
+    }
+
     /**
      *  Whether auto conntction
      * 
@@ -119,7 +182,7 @@ class ADatabase
     }
 
    /** 
-     *  表中插入数据
+     *  Inserting data from the table
      * 
      *  @access public
      *  @author Nezumi
@@ -174,8 +237,8 @@ class ADatabase
             $this->error = 'The condition is required.';
             return false;
         }
-        $data_sql = '';  //更新sql
-        //判断条件是否为空
+        $data_sql = '';
+        
         foreach ($data as $key => $values) {
             $data_sql .= $this->add_special_char($key).'='.$this->add_quotation($values).',';
         }
@@ -186,7 +249,7 @@ class ADatabase
     }
 
     /**
-     * 查询多条记录.
+     * 查询多条记录
      * 
      * @param string $fields 
      * @param string $table 
@@ -199,9 +262,14 @@ class ADatabase
      * @return type
      * 
      */
-    function select($fields='*', $table, $where = '', $limit = '', $order = '', $group = '', $key = '', $having = '') 
+    public function select($fields='*', $table = '', $where = '', $limit = '', $order = '', $group = '', $key = '', $having = '') 
     {
-        $sql = 'SELECT  '.$this->parse_fields($fields).' FROM '.$table. $this->parse_where($where).$this->parse_group($group).$this->parse_having($having).$this->parse_order($order).$this->parse_limit($limit);
+        if( func_num_args()==0 ){
+            print_r($this->options);
+            $sql = 'SELECT  '.$this->options['fields'].' FROM '.$this->options['table'].$this->options['where'].$this->options['group'].$this->options['having'].$this->options['order'].$this->options['limit'];
+        } else {
+            $sql = 'SELECT  '.$this->parse_fields($fields).' FROM '.$table. $this->parse_where($where).$this->parse_group($group).$this->parse_having($having).$this->parse_order($order).$this->parse_limit($limit);
+        }
         return $this->fetch_all($sql);
     }
 
@@ -219,7 +287,7 @@ class ADatabase
      * @return type
      * 
      */
-    function get_one($fields='*', $table, $where = '', $limit = '', $order = '', $group = '', $key = '', $having = '') 
+    public function get_one($fields='*', $table, $where = '', $limit = '', $order = '', $group = '', $key = '', $having = '') 
     {
         $sql = 'SELECT  '.$this->parse_fields($fields).' FROM '.$table. $this->parse_where($where).$this->parse_group($group).$this->parse_having($having).$this->parse_order($order).$this->parse_limit($limit);
         return $this->fetch_one($sql);
@@ -302,7 +370,6 @@ class ADatabase
         return $fields_str;
     }
     
-
     /**
      * Parse where
      *

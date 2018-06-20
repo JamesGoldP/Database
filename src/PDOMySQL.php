@@ -11,11 +11,6 @@ class PDOMySql extends ADatabase
      */
     private $statement;
  
-
-    /**
-     *  是否自动连接,入口
-     * 
-     */
     public function open($config)
     {
         if(empty($config)){
