@@ -1,15 +1,13 @@
 <?php
-include './Loader.php';
+error_reporting(-1);
+include '../Loader.php';
 spl_autoload_register('Loader::_autoload');
-use Nezumi\MySQLi;
+use Nezumi\PDOMySQL;
 
 //load config
-$config = include './configs/database.php';
-
-$mysql = new MySQLi();
-$mysql->open($config['master']);
-// $result = $mysql->select('*', 'cms_category');
-echo '<pre>';
+$config = include '../configs/database.php';
+$mysql = new PDOMySQL();
+$link =  $mysql->open($config['master']);
 
 // D
 $mysql->options['table'] = 'cms_account';
@@ -22,13 +20,17 @@ $insert_array = array(
 );
 $result = $mysql->insert($insert_array, 'cms_account');
 
+// U
 $update_array = array(
 	'name' => 'jimmy2',
 	'money' => 2000,
 );
 $where = "name='jimmy'";
-$result = $mysql->where($where)->update($update_array);
+$result = $mysql->update($update_array, 'cms_account', $where);
 
-$result = $mysql->fields(['name','money'])->limit(99)->order('id desc')->group('name')->having('name=\'jimmy2\'')->select();
+// R
+$result = $mysql->get_primary('cms_account');
+$result = $mysql->select(array('name','money'), 'cms_account', '', 99, 'id desc','name','','name=\'jimmy2\'');
+
 print_r($result);
 $mysql->close();

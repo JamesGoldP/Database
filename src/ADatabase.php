@@ -33,53 +33,14 @@ class ADatabase
         'limit' => '',
     ];
 
-
-    public function fields($argument)
+    public function __call($name ,$arguments)
     {
-        $this->options['fields'] = $this->parse_fields($argument);
-        return $this;
-    }
-
-    public function table($argument)
-    {
-        $this->options['table'] = $argument;
-        return $this;
-    }
-
-    public function join($argument)
-    {
-        $this->options['join'] = 'LEFT JOIN '.$argument;
-        return $this;       
-    }
-
-    public function where($argument)
-    {
-        $this->options['fields'] = $this->parse_where($argument);
-        return $this;
-    }
-
-    public function group($argument)
-    {
-        $this->options['group'] = $this->parse_group($argument);
-        return $this;
-    }
-
-    public function having($argument)
-    {
-        $this->options['having'] = $this->parse_having($argument);
-        return $this;
-    }
-
-    public function order($argument)
-    {
-        $this->options['order'] = $this->parse_order($argument);
-        return $this;
-    }
-
-    public function limit($argument)
-    {
-        $this->options['limit'] = $this->parse_limit($argument);
-        return $this;
+        if( array_key_exists($name, $this->options) ){
+            $method = 'parse'.ucwords($name);
+            $result = $this->$method($arguments[0]);
+            $this->options[$name] = $result;
+            return $this;
+        }
     }
 
     /**
@@ -184,8 +145,6 @@ class ADatabase
    /** 
      *  Inserting data from the table
      * 
-     *  @access public
-     *  @author Nezumi
      * 
      *  @param $data   array        插入数组
      *  @param $table  string       要插入数据的表名
@@ -197,6 +156,7 @@ class ADatabase
      */
     public function insert( $data, $table, $return_insert_id = false, $replace = false )
     {
+
         if (empty($data)) {
             $this->error = 'The insert array is required!';
             return false;
@@ -204,15 +164,20 @@ class ADatabase
         $fields = array_keys($data);
         $values = array_values($data);
 
-        array_walk($fields, array($this, 'add_special_char'));
-        array_walk($values, array($this, 'add_quotation'));
+        array_walk($fields, array($this, 'addBackquote'));
+        array_walk($values, array($this, 'addQuotes'));
 
         $fields_str = implode(',', $fields);
         $values_str = implode(',', $values);
         $method = $replace ? 'REPLACE' : 'INSERT';
+        if (func_num_args()==1){
+            $table = $this->options['table'];
+        }
         $insert_sql = $method.' INTO '.$table.'('.$fields_str.')'.' values('.$values_str.')';
+        $this->afterAction();
         $return = $this->query($insert_sql);
         return $return_insert_id ? $this->insert_id() : $return;
+        
     }
 
     /**
@@ -225,31 +190,41 @@ class ADatabase
      *  @param  array  $data['update_arr'] 更新数组
      *  @param  array  $data['condition'] = array(
      *  
-     *  @return int 影响行数 
+     *  @return int number of affected rows in previous MySQL operation 
      * 
      */
-    public function update($data, $table, $where, $return_affected_rows = false)
+    public function update($data = '', $table = '',  $where = '', $return_affected_rows = false)
     {
         if (empty($data)) {
             $this->error = 'To update array is required!';
             return false;
-        } else if (empty($where)) {
+        } 
+
+        $data_sql = '';
+        foreach ($data as $key => $values) {
+            $data_sql .= $this->addBackquote($key).'='.$this->addQuotes($values).',';
+        }
+        $data_sql = substr($data_sql, 0, -1);
+
+        if (func_num_args()!=1){
+            $this->parseWhere($where);
+        } else {
+            $table = $this->options['table'];
+        }
+
+        if (empty($this->options['where'])) {
             $this->error = 'The condition is required.';
             return false;
         }
-        $data_sql = '';
-        
-        foreach ($data as $key => $values) {
-            $data_sql .= $this->add_special_char($key).'='.$this->add_quotation($values).',';
-        }
-        $data_sql = substr($data_sql, 0, -1);
-        $sql = 'UPDATE '.$table.' SET '.$data_sql.$this->parse_where($where);
+
+        $sql = 'UPDATE '.$table.' SET '.$data_sql.$this->options['where'];
+        $this->afterAction();
         $return = $this->query($sql);
         return $return_affected_rows ? $this->insert_id() : $return;
     }
 
     /**
-     * 查询多条记录
+     * Returns an array containing all of the result set rows
      * 
      * @param string $fields 
      * @param string $table 
@@ -265,16 +240,17 @@ class ADatabase
     public function select($fields='*', $table = '', $where = '', $limit = '', $order = '', $group = '', $key = '', $having = '') 
     {
         if( func_num_args()==0 ){
-            print_r($this->options);
-            $sql = 'SELECT  '.$this->options['fields'].' FROM '.$this->options['table'].$this->options['where'].$this->options['group'].$this->options['having'].$this->options['order'].$this->options['limit'];
+            $this->arrayInsert($this->options, 1, ['FROM']);
+            $sql = 'SELECT '.implode(' ', $this->options);
+             $this->afterAction();
         } else {
-            $sql = 'SELECT  '.$this->parse_fields($fields).' FROM '.$table. $this->parse_where($where).$this->parse_group($group).$this->parse_having($having).$this->parse_order($order).$this->parse_limit($limit);
-        }
+            $sql = 'SELECT  '.$this->parseFields($fields).' FROM '.$table. $this->parseWhere($where).$this->parseGroup($group).$this->parseHaving($having).$this->parseOrder($order).$this->parseLimit($limit);
+        }   
         return $this->fetch_all($sql);
     }
 
     /**
-     * 查询一条记录.
+     * gets one record
      * 
      * @param string $fields 
      * @param string $table 
@@ -287,10 +263,28 @@ class ADatabase
      * @return type
      * 
      */
-    public function get_one($fields='*', $table, $where = '', $limit = '', $order = '', $group = '', $key = '', $having = '') 
+    public function get_one($fields= '*', $table = '', $where = '', $limit = '', $order = '', $group = '', $key = '', $having = '') 
     {
-        $sql = 'SELECT  '.$this->parse_fields($fields).' FROM '.$table. $this->parse_where($where).$this->parse_group($group).$this->parse_having($having).$this->parse_order($order).$this->parse_limit($limit);
+        if( func_num_args()==0 ){
+            $this->arrayInsert($this->options, 1, ['FROM']);
+            $sql = 'SELECT '.implode(' ', $this->options);
+             $this->afterAction();
+        } else {
+            $sql = 'SELECT  '.$this->parseFields($fields).' FROM '.$table. $this->parseWhere($where).$this->parseGroup($group).$this->parseHaving($having).$this->parseOrder($order).$this->parseLimit($limit);
+        }    
         return $this->fetch_one($sql);
+    }
+
+    protected function bulidSelectSQL($fields= '*', $table = '', $where = '', $limit = '', $order = '', $group = '', $key = '', $having = '') 
+    {
+        if( func_num_args()==0 ){
+            $this->arrayInsert($this->options, 1, ['FROM']);
+            $sql = 'SELECT '.implode(' ', $this->options);
+             $this->afterAction();
+        } else {
+            $sql = 'SELECT  '.$this->parseFields($fields).' FROM '.$table. $this->parseWhere($where).$this->parseGroup($group).$this->parseHaving($having).$this->parseOrder($order).$this->parseLimit($limit);
+        }   
+        return $sql;
     }
 
     /**
@@ -301,14 +295,26 @@ class ADatabase
      *  @return int
      * 
      */
-    public function delete($table, $where)
+    public function delete($table = '', $where='')
     {
-        if( empty($where) ){
+        if( func_num_args()!=0 ){  
+            $this->parseWhere($where);
+            $this->options['table'] = $table;
+        }
+        if( empty($this->options['where']) ){
             $this->error = 'The condition is required.';
             return false;
-        }
-        $sql = 'DELETE FROM  '.$table.$this->parse_where($where);
+        }  
+        $sql = 'DELETE FROM  '.$this->options['table'].$this->options['where'];
+        $this->afterAction();
         return $this->query($sql);
+
+    }
+
+
+    protected function afterAction()
+    {
+        $this->resetOptions();
     }
 
     /**
@@ -323,7 +329,7 @@ class ADatabase
     public function get_byprimary($table, $primary, $fields = '*') 
     {
         $sql = 'select %s from %s where '.$this->get_primary($table).'=%d';
-        $sprintf_sql = sprintf($sql, $this->parse_fields($fields), $table, $primary);
+        $sprintf_sql = sprintf($sql, $this->parseFields($fields), $table, $primary);
         return  $this->fetch_one($sprintf_sql);
     }   
 
@@ -350,26 +356,36 @@ class ADatabase
     /**
      * Parse fields
      *
-     * @param string or array 字段添加`
+     * @param string or array 
      * 
      * @return string 
-     * 
      */
-    public function parse_fields($fields){
-        $fields_str = '';
-        if( is_string($fields) && trim($fields)== '*'){
-            $fields_str = '*';
-        } else if( is_string($fields) ){
-            $arr = explode(',', $fields);
-            $fields_str = implode(',', $arr);
-        } else if( is_array($fields)  ){
-            $fields_str = implode(',', $fields);
+    public function parseFields($data){
+        $str = '';
+        if( is_string($data) && trim($data)== '*'){
+            $str = '*';
+        } else if( is_string($data) ){
+            $arr = explode(',', $data);
+            $str = implode(',', $arr);
+        } else if( is_array($data)  ){
+            $str = implode(',', $data);
         } else {
-            $fields_str = '*';
+            $str = '*';
         }
-        return $fields_str;
+        return $str;
     }
-    
+ 
+     /**
+     * Parse fields
+     *
+     * @param string or array 
+     * 
+     * @return string 
+     */
+    public function parseTable($str){
+        return $str;
+    } 
+
     /**
      * Parse where
      *
@@ -378,15 +394,22 @@ class ADatabase
      * @return string 
      * 
      */
-    public function parse_where($where)
+    public function parseWhere($data)
     {
-        $where_str = '';
-        if( $where == '' ){
-            return $where_str;
-        } else if( is_string($where) ){
-            $where_str = ' where '.$where;
+        $str = '';
+        if( $data == '' ){
+            return $str;
+        } else if( is_string($data) ){
+            $str = 'where '.$data;
+        } else if( is_array($data) ){
+            $i = 0;
+            $str .= ' WHERE ';
+            foreach ($data as $key => $values) {
+                $str .= $i!=0 ? 'AND' : ''.$this->addBackquote($key).'='.$this->addQuotes($values);
+                $i++;
+            }
         } 
-        return $where_str;
+        return $str;
     }
 
     /**
@@ -397,7 +420,7 @@ class ADatabase
      * @return string 
      * 
      */
-    public function parse_group($group)
+    public function parseGroup($group)
     {
         $group_str = '';
         if( $group == '' ){
@@ -418,7 +441,7 @@ class ADatabase
      * @return string 
      * 
      */
-    public function parse_having($having)
+    public function parseHaving($having)
     {
         $having_str = '';
         if( $having == '' ){
@@ -430,6 +453,25 @@ class ADatabase
     }
 
     /**
+     * 
+     *
+     * @param  
+     * 
+     * @return string 
+     * 
+     */
+    public function parseJoin($data)
+    {
+        $str = '';
+        if( $data == '' ){
+            return $str;
+        } else if( is_string($data) ){
+            $str = ' LEFT JOIN '.$data;
+        } 
+        return $str;
+    }
+
+    /**
      * Parse order
      *
      * @param string $order 
@@ -437,7 +479,7 @@ class ADatabase
      * @return string 
      * 
      */
-    public function parse_order($order)
+    public function parseOrder($order)
     {
         $order_str = '';
         if( $order == '' ){
@@ -458,7 +500,7 @@ class ADatabase
      * @return string 
      * 
      */
-    public function parse_limit($limit)
+    public function parseLimit($limit)
     {
         $limit_str = '';
         if( $limit == '' ){
@@ -477,14 +519,14 @@ class ADatabase
 
 
     /**
-     * Add `
+     * Add backquote
      *
      * @param string $fields
      * 
      * @return string 
      * 
      */
-    public function add_special_char(&$value){
+    public function addBackquote(&$value){
         if( strpos($value,'`') ===false ){
             $value = '`'.trim($value).'`';
         }
@@ -500,7 +542,7 @@ class ADatabase
      * @return string 
      * 
      */
-    public function add_quotation(&$value, $key = '' , $user_data = '', $quotation=1){
+    public function addQuotes(&$value, $key = '' , $user_data = '', $quotation=1){
         if($quotation){
             $quot = '\'';
         } else {
@@ -547,18 +589,52 @@ class ADatabase
      * @param string $sql 
      * @return boolean
      */
-    public function throw_exception()
+    public function getError()
     {
         if( $this->config['debug'] ){
             if( !empty($this->error) ){
                 return $this->error;
             } else {
-                return $this->get_error();
+                return $this->getThisError();
             }
         }
         return false;
     }
 
+    public function throwException($message)
+    {   
+        echo $message;
+        exit();
+    }
 
-	
+
+    public function resetOptions()
+    {
+        if( !empty($this->options['table']) ){
+            $table = $this->options['table'];
+        } 
+        $this->options = [
+            'fields' => '',
+            'table' => '',
+            'join' => '',
+            'where' => '',
+            'group' => '',
+            'having' => '',
+            'order' => '',
+            'limit' => '',
+        ];
+        $this->options['table'] = $table;
+    }
+
+    /**
+     * @param array $array  
+     * @param int $position position of to insert array
+     * @param to insert array
+     * @return array $array 
+     */
+    public function arrayInsert(&$array, $position, $insert_array) {
+        $first_array = array_splice ($array, 0, $position);
+        $array = array_merge ($first_array, $insert_array, $array);
+    }
+    
 }
