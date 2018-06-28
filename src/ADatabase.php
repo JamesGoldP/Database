@@ -154,7 +154,7 @@ class ADatabase
      *  @return boolean,query resource,int
      * 
      */
-    public function insert( $data, $table, $return_insert_id = false, $replace = false )
+    public function insert( $data = '', $table = '', $return_insert_id = false, $replace = false )
     {
 
         if (empty($data)) {
@@ -170,10 +170,10 @@ class ADatabase
         $fields_str = implode(',', $fields);
         $values_str = implode(',', $values);
         $method = $replace ? 'REPLACE' : 'INSERT';
-        if (func_num_args()==1){
-            $table = $this->options['table'];
+        if (func_num_args()!=1){
+            $this->options['table'] = $table;
         }
-        $insert_sql = $method.' INTO '.$table.'('.$fields_str.')'.' values('.$values_str.')';
+        $insert_sql = $method.' INTO '.$this->options['table'].'('.$fields_str.')'.' values('.$values_str.')';
         $this->afterAction();
         $return = $this->query($insert_sql);
         return $return_insert_id ? $this->insert_id() : $return;
@@ -199,7 +199,6 @@ class ADatabase
             $this->error = 'To update array is required!';
             return false;
         } 
-
         $data_sql = '';
         foreach ($data as $key => $values) {
             $data_sql .= $this->addBackquote($key).'='.$this->addQuotes($values).',';
@@ -208,19 +207,17 @@ class ADatabase
 
         if (func_num_args()!=1){
             $this->parseWhere($where);
-        } else {
-            $table = $this->options['table'];
-        }
-
+            $this->options['table'] = $table;
+        } 
         if (empty($this->options['where'])) {
             $this->error = 'The condition is required.';
             return false;
         }
 
-        $sql = 'UPDATE '.$table.' SET '.$data_sql.$this->options['where'];
+        $sql = 'UPDATE '.$this->options['table'].' SET '.$data_sql.$this->options['where'];
         $this->afterAction();
         $return = $this->query($sql);
-        return $return_affected_rows ? $this->insert_id() : $return;
+        return $return_affected_rows ? $this->affected_rows() : $return;
     }
 
     /**
@@ -271,21 +268,10 @@ class ADatabase
              $this->afterAction();
         } else {
             $sql = 'SELECT  '.$this->parseFields($fields).' FROM '.$table. $this->parseWhere($where).$this->parseGroup($group).$this->parseHaving($having).$this->parseOrder($order).$this->parseLimit($limit);
-        }    
+        } 
         return $this->fetch_one($sql);
     }
 
-    protected function bulidSelectSQL($fields= '*', $table = '', $where = '', $limit = '', $order = '', $group = '', $key = '', $having = '') 
-    {
-        if( func_num_args()==0 ){
-            $this->arrayInsert($this->options, 1, ['FROM']);
-            $sql = 'SELECT '.implode(' ', $this->options);
-             $this->afterAction();
-        } else {
-            $sql = 'SELECT  '.$this->parseFields($fields).' FROM '.$table. $this->parseWhere($where).$this->parseGroup($group).$this->parseHaving($having).$this->parseOrder($order).$this->parseLimit($limit);
-        }   
-        return $sql;
-    }
 
     /**
      *  Deletes Data
@@ -400,12 +386,13 @@ class ADatabase
         if( $data == '' ){
             return $str;
         } else if( is_string($data) ){
-            $str = 'where '.$data;
+            $str = ' WHERE '.$data;
         } else if( is_array($data) ){
             $i = 0;
             $str .= ' WHERE ';
             foreach ($data as $key => $values) {
-                $str .= $i!=0 ? 'AND' : ''.$this->addBackquote($key).'='.$this->addQuotes($values);
+                $link = $i!=0 ? ' AND ' : '';
+                $str .= $link.$this->addBackquote($key).'='.$this->addQuotes($values);
                 $i++;
             }
         } 
@@ -623,7 +610,9 @@ class ADatabase
             'order' => '',
             'limit' => '',
         ];
-        $this->options['table'] = $table;
+        if( !empty($table) ){
+             $this->options['table'] = $table;
+        }
     }
 
     /**
