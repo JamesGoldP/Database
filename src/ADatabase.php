@@ -173,6 +173,7 @@ class ADatabase
         if (func_num_args()!=1){
             $this->options['table'] = $table;
         }
+        $this->beforeAction();
         $insert_sql = $method.' INTO '.$this->options['table'].'('.$fields_str.')'.' values('.$values_str.')';
         $this->afterAction();
         $return = $this->query($insert_sql);
@@ -213,7 +214,7 @@ class ADatabase
             $this->error = 'The condition is required.';
             return false;
         }
-
+        $this->beforeAction();
         $sql = 'UPDATE '.$this->options['table'].' SET '.$data_sql.$this->options['where'];
         $this->afterAction();
         $return = $this->query($sql);
@@ -238,12 +239,14 @@ class ADatabase
     {
         if( func_num_args()!=0 ){
             $this->parseFields($fields);
+            $this->parseTable($table);
             $this->parseWhere($where);
             $this->parseGroup($group);
             $this->parseHaving($having);
             $this->parseOrder($order);
             $this->parseLimit($limit);
         }
+        $this->beforeAction();
         $this->arrayInsert($this->options, 1, ['FROM']);
         $sql = 'SELECT '.implode(' ', $this->options);
         $this->afterAction();
@@ -268,18 +271,19 @@ class ADatabase
     {
         if( func_num_args()!=0 ){
             $this->parseFields($fields);
+            $this->parseTable($table);
             $this->parseWhere($where);
             $this->parseGroup($group);
             $this->parseHaving($having);
             $this->parseOrder($order);
             $this->parseLimit($limit);
         }
+        $this->beforeAction();
         $this->arrayInsert($this->options, 1, ['FROM']);
         $sql = 'SELECT '.implode(' ', $this->options);
         $this->afterAction();
         return $this->fetch_one($sql);
     }
-
 
     /**
      *  Deletes Data
@@ -305,6 +309,12 @@ class ADatabase
 
     }
 
+    protected function beforeAction()
+    {
+        if( empty($this->options['table']) ){
+            $this->options['table'] = $this->getModelName();
+        }
+    }
 
     protected function afterAction()
     {
@@ -633,5 +643,13 @@ class ADatabase
         $first_array = array_splice ($array, 0, $position);
         $array = array_merge ($first_array, $insert_array, $array);
     }
-    
+
+
+    public function getModelName()
+    {
+        $sub_arr = explode('\\', get_class($this));
+        $sub_class = end($sub_arr);
+        return  $this->prefix.toUnderscore($sub_class);
+    }
+   
 }
