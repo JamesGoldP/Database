@@ -311,9 +311,9 @@ class ADatabase
 
     protected function beforeAction()
     {
-        if( empty($this->options['table']) ){
-            $this->options['table'] = $this->getModelName();
-        }
+        // if( empty($this->options['table']) ){
+        //     $this->options['table'] = $this->table;
+        // }
     }
 
     protected function afterAction()
@@ -645,11 +645,6 @@ class ADatabase
     }
 
 
-    public function getModelName()
-    {
-        $sub_arr = explode('\\', get_class($this));
-        $sub_class = end($sub_arr);
-        return  $this->prefix.toUnderscore($sub_class);
-    }
+
    
 }
