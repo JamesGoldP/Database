@@ -23,7 +23,7 @@ class ADatabase
      * @var string
      */
     public $options = [
-        'fields' => '',
+        'fields' => '*',
         'table' => '',
         'join' => '',
         'where' => '',
@@ -236,13 +236,17 @@ class ADatabase
      */
     public function select($fields='*', $table = '', $where = '', $limit = '', $order = '', $group = '', $key = '', $having = '') 
     {
-        if( func_num_args()==0 ){
-            $this->arrayInsert($this->options, 1, ['FROM']);
-            $sql = 'SELECT '.implode(' ', $this->options);
-             $this->afterAction();
-        } else {
-            $sql = 'SELECT  '.$this->parseFields($fields).' FROM '.$table. $this->parseWhere($where).$this->parseGroup($group).$this->parseHaving($having).$this->parseOrder($order).$this->parseLimit($limit);
-        }   
+        if( func_num_args()!=0 ){
+            $this->parseFields($fields);
+            $this->parseWhere($where);
+            $this->parseGroup($group);
+            $this->parseHaving($having);
+            $this->parseOrder($order);
+            $this->parseLimit($limit);
+        }
+        $this->arrayInsert($this->options, 1, ['FROM']);
+        $sql = 'SELECT '.implode(' ', $this->options);
+        $this->afterAction();
         return $this->fetch_all($sql);
     }
 
@@ -262,13 +266,17 @@ class ADatabase
      */
     public function get_one($fields= '*', $table = '', $where = '', $limit = '', $order = '', $group = '', $key = '', $having = '') 
     {
-        if( func_num_args()==0 ){
-            $this->arrayInsert($this->options, 1, ['FROM']);
-            $sql = 'SELECT '.implode(' ', $this->options);
-             $this->afterAction();
-        } else {
-            $sql = 'SELECT  '.$this->parseFields($fields).' FROM '.$table. $this->parseWhere($where).$this->parseGroup($group).$this->parseHaving($having).$this->parseOrder($order).$this->parseLimit($limit);
-        } 
+        if( func_num_args()!=0 ){
+            $this->parseFields($fields);
+            $this->parseWhere($where);
+            $this->parseGroup($group);
+            $this->parseHaving($having);
+            $this->parseOrder($order);
+            $this->parseLimit($limit);
+        }
+        $this->arrayInsert($this->options, 1, ['FROM']);
+        $sql = 'SELECT '.implode(' ', $this->options);
+        $this->afterAction();
         return $this->fetch_one($sql);
     }
 
@@ -601,7 +609,7 @@ class ADatabase
             $table = $this->options['table'];
         } 
         $this->options = [
-            'fields' => '',
+            'fields' => '*',
             'table' => '',
             'join' => '',
             'where' => '',
@@ -611,7 +619,7 @@ class ADatabase
             'limit' => '',
         ];
         if( !empty($table) ){
-             $this->options['table'] = $table;
+            $this->options['table'] = $table;
         }
     }
 
