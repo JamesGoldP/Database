@@ -39,7 +39,7 @@ class MySQL extends ADatabase
     }
 
     /**
-     * sql执行
+     * sql query
      * 
      * @param string $sql 
      * 
@@ -65,7 +65,7 @@ class MySQL extends ADatabase
 
 
     /**
-     * 查询多条记录.
+     *  Returns an array containing all of the result set rows
      * 
      * @param string $sql
      *  
@@ -78,11 +78,11 @@ class MySQL extends ADatabase
         if( $this->lastqueryid === FALSE ){
             return false;
         }
-        $result = array();
+        $data = [];
         while ($row = $this->fetch()) {
-            $result[] = $row;
+            $data[] = $row;
         }
-        return $result;
+        return $data;
     }
 
     /**

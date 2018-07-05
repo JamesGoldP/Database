@@ -62,7 +62,7 @@ class MySQLi extends ADatabase
     }
 
     /**
-     * 查询多条记录.
+     * Returns an array containing all of the result set rows
      * 
      * @param string $sql
      *  
@@ -71,19 +71,20 @@ class MySQLi extends ADatabase
      */
     public function fetch_all($sql) 
     {
-        $query = $this->query($sql);
+        $this->query($sql);
         if( $this->result === FALSE ){
             return false;
         }
-        $result = array();
-        while ($row = $this->fetch()) {
-            $result[] = $row;
-        }
-        return $result;
+        $row = [];
+        $data = [];
+         while ($row = $this->fetch()) {
+            $data[] = $row;
+        }           
+        return $data;
     }
 
     /**
-     * 查询一条记录
+     * Returns an array containing a result set rows
      *
      * @param string $sql 
      * 

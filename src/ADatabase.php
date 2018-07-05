@@ -154,7 +154,7 @@ class ADatabase
      *  @return boolean,query resource,int
      * 
      */
-    public function insert( $data = '', $table = '', $return_insert_id = false, $replace = false )
+    public function insert( $data = '', $return_insert_id = false, $replace = false )
     {
 
         if (empty($data)) {
@@ -194,7 +194,7 @@ class ADatabase
      *  @return int number of affected rows in previous MySQL operation 
      * 
      */
-    public function update($data = '', $table = '',  $where = '', $return_affected_rows = false)
+    public function update($data = '', $return_affected_rows = false)
     {
         if (empty($data)) {
             $this->error = 'To update array is required!';
@@ -224,28 +224,9 @@ class ADatabase
     /**
      * Returns an array containing all of the result set rows
      * 
-     * @param string $fields 
-     * @param string $table 
-     * @param string $where 
-     * @param string $limit 
-     * @param string $order 
-     * @param string $group 
-     * @param string $key 
-     * 
-     * @return type
-     * 
      */
-    public function select($fields='*', $table = '', $where = '', $limit = '', $order = '', $group = '', $key = '', $having = '') 
+    public function select() 
     {
-        if( func_num_args()!=0 ){
-            $this->parseFields($fields);
-            $this->parseTable($table);
-            $this->parseWhere($where);
-            $this->parseGroup($group);
-            $this->parseHaving($having);
-            $this->parseOrder($order);
-            $this->parseLimit($limit);
-        }
         $this->beforeAction();
         $this->arrayInsert($this->options, 1, ['FROM']);
         $sql = 'SELECT '.implode(' ', $this->options);
@@ -256,69 +237,16 @@ class ADatabase
     /**
      * gets one record
      * 
-     * @param string $fields 
-     * @param string $table 
-     * @param string $where 
-     * @param string $limit 
-     * @param string $order 
-     * @param string $group 
-     * @param string $key 
-     * 
      * @return type
      * 
      */
-    public function get_one($fields= '*', $table = '', $where = '', $limit = '', $order = '', $group = '', $key = '', $having = '') 
+    public function get_one() 
     {
-        if( func_num_args()!=0 ){
-            $this->parseFields($fields);
-            $this->parseTable($table);
-            $this->parseWhere($where);
-            $this->parseGroup($group);
-            $this->parseHaving($having);
-            $this->parseOrder($order);
-            $this->parseLimit($limit);
-        }
         $this->beforeAction();
         $this->arrayInsert($this->options, 1, ['FROM']);
         $sql = 'SELECT '.implode(' ', $this->options);
         $this->afterAction();
         return $this->fetch_one($sql);
-    }
-
-    /**
-     *  Deletes Data
-     *
-     *  @param  string $$talbe
-     * 
-     *  @return int
-     * 
-     */
-    public function delete($table = '', $where='')
-    {
-        if( func_num_args()!=0 ){  
-            $this->parseWhere($where);
-            $this->options['table'] = $table;
-        }
-        if( empty($this->options['where']) ){
-            $this->error = 'The condition is required.';
-            return false;
-        }  
-        $sql = 'DELETE FROM  '.$this->options['table'].$this->options['where'];
-        $this->afterAction();
-        return $this->query($sql);
-
-    }
-
-    protected function beforeAction()
-    {
-        // if( empty($this->options['table']) ){
-        //     $this->options['table'] = $this->table;
-        // }
-    }
-
-    protected function afterAction()
-    {
-        $this->resetOptions();
     }
 
     /**
@@ -330,24 +258,42 @@ class ADatabase
      * @return array or false 
      * 
      */
-    public function get_byprimary($table, $primary, $fields = '*') 
+    public function getByPrimary($table, $primary, $fields = '*') 
     {
-        $sql = 'select %s from %s where '.$this->get_primary($table).'=%d';
+        $sql = 'select %s from %s where '.$this->getPrimary($table).'=%d';
         $sprintf_sql = sprintf($sql, $this->parseFields($fields), $table, $primary);
         return  $this->fetch_one($sprintf_sql);
     }   
 
     /**
-     * 获取数据表主键
+     *  Deletes Data
+     *
+     *  @param  string $$talbe
      * 
-     * @param $table  数据表
+     *  @return int
+     * 
+     */
+    public function delete()
+    {
+        if( empty($this->options['where']) ){
+            $this->error = 'The condition is required.';
+            return false;
+        }  
+        $sql = 'DELETE FROM  '.$this->options['table'].$this->options['where'];
+        $this->afterAction();
+        return $this->query($sql);
+
+    }
+
+    /**
+     * gets primary key of table
      * 
      * @return string 
      * 
      */
-    public function get_primary($table) 
+    public function getPrimary() 
     {
-        $this->query('DESC '.$table);
+        $this->query('DESC '.$this->options['table']);
         while($row = $this->fetch()){
              if( $row['Key']=='PRI' ){
                   $primary = $row['Field']; 
@@ -356,6 +302,17 @@ class ADatabase
         }
         return $primary;
     }
+
+    protected function beforeAction()
+    {
+
+    }
+
+    protected function afterAction()
+    {
+        $this->resetOptions();
+    }
+
 
     /**
      * Parse fields
