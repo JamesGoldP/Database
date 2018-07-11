@@ -7,7 +7,7 @@ class ADatabase
     /**
      * @var databse connection resource
      */
-    protected $link;  
+    public $link;  
 
     /**
      * @var databse connection configuration
@@ -227,10 +227,7 @@ class ADatabase
      */
     public function select() 
     {
-        $this->beforeAction();
-        $this->arrayInsert($this->options, 1, ['FROM']);
-        $sql = 'SELECT '.implode(' ', $this->options);
-        $this->afterAction();
+        $sql = $this->builcSelectSql();
         return $this->fetch_all($sql);
     }
 
@@ -242,11 +239,23 @@ class ADatabase
      */
     public function get_one() 
     {
+        $sql = $this->builcSelectSql();
+        return $this->fetch_one($sql);
+    }
+
+    /**
+     * gets sql
+     * 
+     * @return string
+     * 
+     */
+    public function builcSelectSql()
+    {
         $this->beforeAction();
         $this->arrayInsert($this->options, 1, ['FROM']);
         $sql = 'SELECT '.implode(' ', $this->options);
         $this->afterAction();
-        return $this->fetch_one($sql);
+        return $sql;     
     }
 
     /**
