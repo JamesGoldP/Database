@@ -147,7 +147,6 @@ class ADatabase
      * 
      * 
      *  @param $data   array        插入数组
-     *  @param $table  string       要插入数据的表名
      *  @param $return_insert_id boolean   是否返回插入ID
      *  @param $replace  boolean 是使用replace into 还是insert into
      * 
@@ -170,9 +169,7 @@ class ADatabase
         $fields_str = implode(',', $fields);
         $values_str = implode(',', $values);
         $method = $replace ? 'REPLACE' : 'INSERT';
-        if (func_num_args()!=1){
-            $this->options['table'] = $table;
-        }
+
         $this->beforeAction();
         $insert_sql = $method.' INTO '.$this->options['table'].'('.$fields_str.')'.' values('.$values_str.')';
         $this->afterAction();
@@ -184,17 +181,10 @@ class ADatabase
     /**
      *  Update data from the table
      *
-     *  @access public
-     *  @author  Nezumi
-     *
-     *  @param  string $data['tab_name'] 表名
-     *  @param  array  $data['update_arr'] 更新数组
-     *  @param  array  $data['condition'] = array(
-     *  
      *  @return int number of affected rows in previous MySQL operation 
      * 
      */
-    public function update($data = '', $return_affected_rows = false)
+    public function update($data = [], $return_affected_rows = false)
     {
         if (empty($data)) {
             $this->error = 'To update array is required!';
@@ -206,10 +196,6 @@ class ADatabase
         }
         $data_sql = substr($data_sql, 0, -1);
 
-        if (func_num_args()!=1){
-            $this->parseWhere($where);
-            $this->options['table'] = $table;
-        } 
         if (empty($this->options['where'])) {
             $this->error = 'The condition is required.';
             return false;

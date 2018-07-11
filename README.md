@@ -3,9 +3,9 @@ Database connection classes for mysql.(mysql,mysqli,pdo)
 
 ## Installation
 
-Use [composer](http://getcomposer.org) to install Nezumi/mysql in your project:
+Use [composer](http://getcomposer.org) to install nezumi/mysql in your project:
 ```
-composer require Nezumi/mysql
+composer require nezumi/mysql
 ```
 
 
