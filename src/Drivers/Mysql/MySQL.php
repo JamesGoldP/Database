@@ -1,14 +1,13 @@
 <?php
-namespace Nezumi;
+namespace Nezumi\Drivers\Mysql;
 
-class MySQLi extends ADatabase
+class MySQL implements ADatabase
 {
 
     /**
      * @var 最近数据库查询资源
      */
-    private $result;
-
+    private $lastqueryid;
 
     public function open($config)
     {
@@ -18,26 +17,28 @@ class MySQLi extends ADatabase
         }
         $this->config = $config;
         if( $this->config['autoconnect'] ){
-            return $this->connect();
+            $this->connect();
         }
     }
 
     public function connect()
     {
-        $this->link = new \mysqli($this->config['hostname'], $this->config['username'], $this->config['password'], $this->config['database']);
-        if( $this->link->connect_error ){
-            $this->error = '连接数据库失败';
-            return false;
-        }
-        if( !$this->link->set_charset($this->config['charset']) ){
-            $this->error = '设置默认字符编码失败';
-            return false;
+        if (!is_resource($this->link)) {
+            //是否长连接
+            $func = $this->config['pconnect'] ? 'mysql_pconnect' : 'mysql_connect';
+            $this->link = $func($this->config['hostname'], $this->config['username'], $this->config['password']);
+            if (mysql_select_db($this->config['database'])) {
+                mysql_query('set names '.$this->config['charset']);
+            } else {
+                $this->error = '不能选择数据库';
+                return false;
+            }
         }
         return $this->link; 
     }
 
     /**
-     * sql执行
+     * sql query
      * 
      * @param string $sql 
      * 
@@ -53,16 +54,17 @@ class MySQLi extends ADatabase
         if (!is_resource($this->link)) {
             $this->connect();
         }
-        $this->result = $this->link->query($sql);
-        if( $this->result === FALSE ){
-            $this->error = 'SQL ERROR:'. $sql;
+        $this->lastqueryid = mysql_query($sql, $this->link);
+        if( $this->lastqueryid === FALSE ){
+            $this->error = 'SQL ERROR:'.$sql;
             return false;
         }
-        return $this->result; 
+        return $this->lastqueryid; 
     }
 
+
     /**
-     * Returns an array containing all of the result set rows
+     *  Returns an array containing all of the result set rows
      * 
      * @param string $sql
      *  
@@ -72,19 +74,18 @@ class MySQLi extends ADatabase
     public function fetch_all($sql) 
     {
         $this->query($sql);
-        if( $this->result === FALSE ){
+        if( $this->lastqueryid === FALSE ){
             return false;
         }
-        $row = [];
         $data = [];
-         while ($row = $this->fetch()) {
+        while ($row = $this->fetch()) {
             $data[] = $row;
-        }           
+        }
         return $data;
     }
 
     /**
-     * Returns an array containing a result set rows
+     * 查询一条记录
      *
      * @param string $sql 
      * 
@@ -94,7 +95,7 @@ class MySQLi extends ADatabase
     public function fetch_one($sql) 
     {
         $this->query($sql);
-        if( $this->result === FALSE ){
+        if( $this->lastqueryid === FALSE ){
             return false;
         }
         return $this->fetch();
@@ -109,8 +110,8 @@ class MySQLi extends ADatabase
      * @return array or false
      * 
      */
-    public function fetch($type = MYSQLI_ASSOC ){
-        $res = $this->result->fetch_array($type);
+    public function fetch($type = MYSQL_ASSOC ){
+        $res = mysql_fetch_array($this->lastqueryid, $type);
         //如果查询失败，返回False,那么释放改资源
         if(!$res){
             $this->free();
@@ -125,8 +126,11 @@ class MySQLi extends ADatabase
      * 
      */
     public function free(){
-       $this->result = NULL;
+       if( is_resource($this->lastqueryid) ){
+            mysql_free_result($this->lastqueryid);
+       } 
     }
+
 
     /**
      * 查询表的总记录条数 total_record(表名)
@@ -138,8 +142,8 @@ class MySQLi extends ADatabase
      */
     public function total_record($table)
     {
-        $this->result = $this->query('select * from'.$table);
-        return $this->result->num_rows;
+        $total_recordque = $this->query('select * from'.$table);
+        return mysql_num_rows($total_recordque);
     }
 
     /**
@@ -150,7 +154,7 @@ class MySQLi extends ADatabase
      */
     public function affected_rows()
     {
-        return $this->link->affected_rows;
+        return mysql_affected_rows($this->link);
     }
 
     /**
@@ -161,7 +165,7 @@ class MySQLi extends ADatabase
      */
     public function insert_id()
     {
-        return $this->link->insert_id;
+        return mysql_insert_id($this->link);
     }
 
     /**
@@ -202,9 +206,8 @@ class MySQLi extends ADatabase
      */
     public function serverinfo()
     {
-        return $this->link->server_info;
+        return mysql_get_server_info($this->link);
     }
-
 
     /**
      * 关闭连接
@@ -212,16 +215,14 @@ class MySQLi extends ADatabase
      */
     public function close()
     {
+        mysql_close($this->link);
         if(is_resource($this->link)){
-            $this->link->close();
+            mysql_close($this->link);
         }
     }
 
-    /**
-     * get the inner error info.
-     */
     public function get_error()
     {
-        return array($this->link->errno=>$this->link->error);
+        return array(mysql_errno($this->link)=>mysql_error($this->link));
     }
 }

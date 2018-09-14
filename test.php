@@ -1,21 +1,15 @@
 <?php
 include './Loader.php';
 spl_autoload_register('Loader::_autoload');
-require 'vendor/autoload.php';
-use Nezumi\Model;
-use Nezumi\Db;
+use Nezumi\MySQLi;
 
-class admin extends Model{
+//load config
+$config = include './configs/database.php';
 
-    public function test()
-    {
-        p('run here!');
-    }
-
-}
-$config = require_once './configs/database.php';
-Db::setConfig($config);
-$mysql = new admin();
+$mysql = new MySQLi();
+$mysql->open($config['master']);
+// $result = $mysql->select('*', 'cms_category');
+echo '<pre>';
 
 // D
 $mysql->options['table'] = 'cms_account';
@@ -38,4 +32,3 @@ $result = $mysql->where($where)->update($update_array);
 $result = $mysql->fields(['name','money'])->limit(99)->order('id desc')->group('name')->having('name=\'jimmy2\'')->select();
 print_r($result);
 $mysql->close();
-

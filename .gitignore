@@ -1,4 +1,14 @@
-/database.php
-.php_cs.cache
+# composer files
+composer-setup.php
+
+# composer vendor dir
 /vendor
+
+# Mac DS_Stroe fiels
 .DS_Store
+
+# php-cs-fixer files
+.php_cs.cache
+
+/.idea
+/configs/database.php

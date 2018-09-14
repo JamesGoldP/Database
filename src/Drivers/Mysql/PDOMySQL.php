@@ -1,16 +1,31 @@
 <?php
-namespace Nezumi;
+namespace Nezumi\Drivers\Mysql;
 
 use PDO;
 
-class PDOMySql extends ADatabase
+class PDOMySql implements ADatabase
 {
 
     /**
      * @var 最近数据库查询资源
      */
     private $statement;
- 
+
+    /**
+     * @var databse connection resource
+     */
+    public $link;
+
+    /**
+     * @var databse connection configuration
+     */
+    protected $config;
+
+    /**
+     * @var database conntion error
+     */
+    protected $error;
+
     public function open($config)
     {
         if(empty($config)){
@@ -29,11 +44,11 @@ class PDOMySql extends ADatabase
 			$this->error = '不支持PDO，请先开启';
             return false;
 		}
-		//是否长连接
+		//whether long connection
         if( $this->config['pconnect'] ){
-            $this->$config['params'][constant('PDO::ATTR_PERSISTENT')] = true;
+            $this->config['params'][constant('PDO::ATTR_PERSISTENT')] = true;
         }
-		//开始连接
+		//start connection
 		try{
             $this->config['params'] = isset($this->config['params']) ? $this->config['params'] : array(); 
 			$this->link = new PDO('mysql:host='.$this->config['hostname'].';dbname='.$this->config['database'], $this->config['username'], $this->config['password'], $this->config['params']);
@@ -101,7 +116,6 @@ class PDOMySql extends ADatabase
 		$result = $this->statement->fetchAll($type);
 		return $result;	
 	}
-
 
 	/**
      * 查询一条记录.

@@ -1,23 +1,56 @@
 <?php
+/**
+ * Created by PhpStorm.
+ * User: PengYilong
+ * Date: 2018/9/8
+ * Time: 1:24 PM
+ */
+
 namespace Nezumi;
 
-class ADatabase
-{
+use Nezumi\Drivers\Mysql\PDOMySql;
+
+class Model{
 
     /**
-     * @var databse connection resource
+     * @var
      */
-    public $link;  
+    protected $data;
 
     /**
-     * @var databse connection configuration
+     * @var
      */
-    protected $config;
+    protected $autoWriteTimestamp;
 
     /**
-     * @var database conntion error
+     * @var
      */
-    protected $error;
+    protected $createTime;
+
+    /**
+     * @var
+     */
+    protected $updateTime;
+
+    /**
+     * @var
+     */
+    protected $db;
+
+    /**
+     * @var string prefix
+     */
+    protected $prefix;
+
+    /**
+     * @var string name of table
+     */
+    protected $table = NULL;
+
+    /**
+     * @var
+     */
+    protected $cache;
 
     /**
      * @var string
@@ -33,6 +66,50 @@ class ADatabase
         'limit' => '',
     ];
 
+    public function __construct()
+    {
+        $this->getDatabase();
+        $db_config = Db::getConfig()['master'];
+        $this->prefix = $db_config['tablepre'];
+        $this->table = $this->getModelName();
+        $this->options['table'] = $this->table;
+    }
+
+    public function getModelName()
+    {
+        $sub_arr = explode('\\', get_class($this));
+        $sub_class = end($sub_arr);
+        return  $this->prefix.to_underscore($sub_class);
+    }
+
+    public function getDatabase( $id = 'master' )
+    {
+        $key = 'database_'.$id;
+        $database_config = Db::getConfig();
+        if( empty($database_config) ){
+            return false;
+        }
+        if( $id == 'master' ){
+            $db_config = $database_config['master'];
+        } else {
+            $db_config = $database_config[array_rand($database_config['slave'])];
+        }
+        $db = Register::get($key);
+        if( !$db ){
+            switch ($db_config['type']) {
+                case 'pdo':
+                    $db = new PDOMySql();
+                    break;
+                default:
+                    $db = new PDOMySql();
+            }
+            $db->open($db_config);
+            Register::set($key, $db);
+        }
+        $this->db = $db;
+
+    }
+
     public function __call($name ,$arguments)
     {
         if( array_key_exists($name, $this->options) ){
@@ -44,114 +121,15 @@ class ADatabase
     }
 
     /**
-     *  Whether auto conntction
-     * 
-     */
-    public function open($config)
-    {
-        
-    }
-
-    /**
-     * The databse connection method
-     * 
-     * @access public
-     * 
-     * @return resource
-     * 
-     */
-    public function connect()
-    {
-
-    }
-    
-    /**
-     * exectutes sql
-     * 
-     * @param string $sql 
-     * 
-     * @return resource or false
-     * 
-     */
-    public function query($sql)
-    {
-
-    }
-
-    /**
-     * 获取sql在数据库影响的条数
-     * 
-     * @return int
-     * 
-     */
-    public function affected_rows()
-    {
-
-    }
-
-    /**
-     * 取得上一步 INSERT 操作表产生的auto_increment,就是自增主键
-     * 
-     * @return int
-     * 
-     */
-    public function insert_id()
-    {
-
-    }
-
-    /**
-     * 查询一条记录获取类型
-     *
-     * @param constant $type 返回结果集类型    
-     *                  
-     * 
-     * @return array or false
-     * 
-     */
-    public function fetch($type = MYSQLI_ASSOC )
-    {
-
-    }
-
-    /**
-     * 
-     * 释放查询资源
-     * 
-     * 
-     */
-    protected function free()
-    {
-
-    }
-    
-    /**
-     * close connection
-     * @return type
-     */
-    protected function close()
-    {
-
-    }
-
-    /**
-     * get the inner error info.
-     */
-    protected function get_error()
-    {
-
-    }
-
-   /** 
      *  Inserting data from the table
-     * 
-     * 
+     *
+     *
      *  @param $data   array        插入数组
      *  @param $return_insert_id boolean   是否返回插入ID
      *  @param $replace  boolean 是使用replace into 还是insert into
-     * 
+     *
      *  @return boolean,query resource,int
-     * 
+     *
      */
     public function insert( $data = '', $return_insert_id = false, $replace = false )
     {
@@ -173,23 +151,22 @@ class ADatabase
         $this->beforeAction();
         $insert_sql = $method.' INTO '.$this->options['table'].'('.$fields_str.')'.' values('.$values_str.')';
         $this->afterAction();
-        $return = $this->query($insert_sql);
-        return $return_insert_id ? $this->insert_id() : $return;
-        
+        $return = $this->db->query($insert_sql);
+        return $return_insert_id ? $this->db->insert_id() : $return;
     }
 
     /**
      *  Update data from the table
      *
-     *  @return int number of affected rows in previous MySQL operation 
-     * 
+     *  @return int number of affected rows in previous MySQL operation
+     *
      */
     public function update($data = [], $return_affected_rows = false)
     {
         if (empty($data)) {
             $this->error = 'To update array is required!';
             return false;
-        } 
+        }
         $data_sql = '';
         foreach ($data as $key => $values) {
             $data_sql .= $this->addBackquote($key).'='.$this->addQuotes($values).',';
@@ -203,45 +180,45 @@ class ADatabase
         $this->beforeAction();
         $sql = 'UPDATE '.$this->options['table'].' SET '.$data_sql.$this->options['where'];
         $this->afterAction();
-        $return = $this->query($sql);
+        $return = $this->db->query($sql);
         return $return_affected_rows ? $this->affected_rows() : $return;
     }
 
     /**
      * Returns an array containing all of the result set rows
-     * 
+     *
      */
-    public function select() 
+    public function select()
     {
         $sql = $this->builcSelectSql();
-        return $this->fetch_all($sql);
+        return $this->db->fetch_all($sql);
     }
 
     /**
      * gets one record
-     * 
+     *
      * @return type
-     * 
+     *
      */
-    public function get_one() 
+    public function get_one()
     {
         $sql = $this->builcSelectSql();
-        return $this->fetch_one($sql);
+        return $this->db->fetch_one($sql);
     }
 
     /**
      * gets sql
-     * 
+     *
      * @return string
-     * 
+     *
      */
     public function builcSelectSql()
     {
         $this->beforeAction();
-        $this->arrayInsert($this->options, 1, ['FROM']);
+        $this->options = array_insert($this->options, 1, ['FROM']);
         $sql = 'SELECT '.implode(' ', $this->options);
         $this->afterAction();
-        return $sql;     
+        return $sql;
     }
 
     /**
@@ -249,51 +226,51 @@ class ADatabase
      *
      * @param string $sql 查询sql
      * @param string $type 类型
-     * 
-     * @return array or false 
-     * 
+     *
+     * @return array or false
+     *
      */
-    public function getByPrimary($table, $primary, $fields = '*') 
+    public function getByPrimary($table, $primary, $fields = '*')
     {
         $sql = 'select %s from %s where '.$this->getPrimary($table).'=%d';
         $sprintf_sql = sprintf($sql, $this->parseFields($fields), $table, $primary);
         return  $this->fetch_one($sprintf_sql);
-    }   
+    }
 
     /**
      *  Deletes Data
      *
      *  @param  string $$talbe
-     * 
+     *
      *  @return int
-     * 
+     *
      */
     public function delete()
     {
         if( empty($this->options['where']) ){
             $this->error = 'The condition is required.';
             return false;
-        }  
+        }
         $sql = 'DELETE FROM  '.$this->options['table'].$this->options['where'];
         $this->afterAction();
-        return $this->query($sql);
+        return $this->db->query($sql);
 
     }
 
     /**
      * gets primary key of table
-     * 
-     * @return string 
-     * 
+     *
+     * @return string
+     *
      */
-    public function getPrimary() 
+    public function getPrimary()
     {
-        $this->query('DESC '.$this->options['table']);
+        $this->db->query('DESC '.$this->options['table']);
         while($row = $this->fetch()){
-             if( $row['Key']=='PRI' ){
-                  $primary = $row['Field']; 
-                  break;
-             } 
+            if( $row['Key']=='PRI' ){
+                $primary = $row['Field'];
+                break;
+            }
         }
         return $primary;
     }
@@ -308,13 +285,12 @@ class ADatabase
         $this->resetOptions();
     }
 
-
     /**
      * Parse fields
      *
-     * @param string or array 
-     * 
-     * @return string 
+     * @param string or array
+     *
+     * @return string
      */
     public function parseFields($data){
         $str = '';
@@ -330,25 +306,25 @@ class ADatabase
         }
         return $str;
     }
- 
-     /**
+
+    /**
      * Parse fields
      *
-     * @param string or array 
-     * 
-     * @return string 
+     * @param string or array
+     *
+     * @return string
      */
     public function parseTable($str){
         return $str;
-    } 
+    }
 
     /**
      * Parse where
      *
-     * @param string $where 
-     * 
-     * @return string 
-     * 
+     * @param string $where
+     *
+     * @return string
+     *
      */
     public function parseWhere($data)
     {
@@ -365,17 +341,17 @@ class ADatabase
                 $str .= $link.$this->addBackquote($key).'='.$this->addQuotes($values);
                 $i++;
             }
-        } 
+        }
         return $str;
     }
 
     /**
      * Parse group
      *
-     * @param string $group 
-     * 
-     * @return string 
-     * 
+     * @param string $group
+     *
+     * @return string
+     *
      */
     public function parseGroup($group)
     {
@@ -393,10 +369,10 @@ class ADatabase
     /**
      * Parse having
      *
-     * @param string $having 
-     * 
-     * @return string 
-     * 
+     * @param string $having
+     *
+     * @return string
+     *
      */
     public function parseHaving($having)
     {
@@ -405,17 +381,17 @@ class ADatabase
             return $having_str;
         } else if( is_string($having) ){
             $having_str = ' HAVING '.$having;
-        } 
+        }
         return $having_str;
     }
 
     /**
-     * 
      *
-     * @param  
-     * 
-     * @return string 
-     * 
+     *
+     * @param
+     *
+     * @return string
+     *
      */
     public function parseJoin($data)
     {
@@ -424,17 +400,17 @@ class ADatabase
             return $str;
         } else if( is_string($data) ){
             $str = ' LEFT JOIN '.$data;
-        } 
+        }
         return $str;
     }
 
     /**
      * Parse order
      *
-     * @param string $order 
-     * 
-     * @return string 
-     * 
+     * @param string $order
+     *
+     * @return string
+     *
      */
     public function parseOrder($order)
     {
@@ -452,10 +428,10 @@ class ADatabase
     /**
      * Parse limit
      *
-     * @param string $limit 
-     * 
-     * @return string 
-     * 
+     * @param string $limit
+     *
+     * @return string
+     *
      */
     public function parseLimit($limit)
     {
@@ -474,14 +450,13 @@ class ADatabase
         return $limit_str;
     }
 
-
     /**
      * Add backquote
      *
      * @param string $fields
-     * 
-     * @return string 
-     * 
+     *
+     * @return string
+     *
      */
     public function addBackquote(&$value){
         if( strpos($value,'`') ===false ){
@@ -490,14 +465,13 @@ class ADatabase
         return $value;
     }
 
-
     /**
      * Add ''
      *
      * @param string $fields
-     * 
-     * @return string 
-     * 
+     *
+     * @return string
+     *
      */
     public function addQuotes(&$value, $key = '' , $user_data = '', $quotation=1){
         if($quotation){
@@ -506,17 +480,17 @@ class ADatabase
             $quot = '';
         }
         $value = $quot.$value.$quot;
-        return $value; 
+        return $value;
     }
 
-   /**
-     * 
+    /**
+     *
      * data to table
-     * 
-     * @param string $sql 
-     * 
+     *
+     * @param string $sql
+     *
      * @return string
-     * 
+     *
      */
     public function display_table($data)
     {
@@ -525,7 +499,7 @@ class ADatabase
         foreach ($data[0] as $key => $value) {
             $out .= "<td>$key</td>";
         }
-           
+
         $out .= '</tr>';
         foreach ($data as $key => $value) {
             $out .= '<tr>';
@@ -539,11 +513,10 @@ class ADatabase
         return $out;
     }
 
-
     /**
      * 如果调试的话输出错误信息
-     * @param string $errMsg 
-     * @param string $sql 
+     * @param string $errMsg
+     * @param string $sql
      * @return boolean
      */
     public function getError()
@@ -559,7 +532,7 @@ class ADatabase
     }
 
     public function throwException($message)
-    {   
+    {
         echo $message;
         exit();
     }
@@ -569,7 +542,7 @@ class ADatabase
     {
         if( !empty($this->options['table']) ){
             $table = $this->options['table'];
-        } 
+        }
         $this->options = [
             'fields' => '*',
             'table' => '',
@@ -585,18 +558,4 @@ class ADatabase
         }
     }
 
-    /**
-     * @param array $array  
-     * @param int $position position of to insert array
-     * @param to insert array
-     * @return array $array 
-     */
-    public function arrayInsert(&$array, $position, $insert_array) {
-        $first_array = array_splice ($array, 0, $position);
-        $array = array_merge ($first_array, $insert_array, $array);
-    }
-
-
-
-   
 }

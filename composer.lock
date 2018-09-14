@@ -1,0 +1,58 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "e5e6a93c44367a1e9c98ad5aa865ee2b",
+    "packages": [
+        {
+            "name": "nezumi/myfunctions",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/PengYilong/MyFunctions.git",
+                "reference": "1b3043fc95581e956160f3fdfc29114141b4dde2"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/PengYilong/MyFunctions/zipball/1b3043fc95581e956160f3fdfc29114141b4dde2",
+                "reference": "1b3043fc95581e956160f3fdfc29114141b4dde2",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": [],
+                "files": [
+                    "src/functions.php"
+                ]
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "authors": [
+                {
+                    "name": "Yilong Peng",
+                    "email": "948800401@qq.com",
+                    "homepage": "https://github.com/YilongPeng",
+                    "role": "Developer"
+                }
+            ],
+            "description": "library",
+            "time": "2018-09-14T06:17:14+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": {
+        "nezumi/myfunctions": 20
+    },
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": {
+        "php": ">=5.4"
+    },
+    "platform-dev": []
+}
