@@ -33,7 +33,7 @@ class Model{
     protected $updateTime;
 
     /**
-     * @var
+     * @var false or object
      */
     protected $db;
 
@@ -45,7 +45,7 @@ class Model{
     /**
      * @var string name of table
      */
-    protected $table = NULL;
+    protected $table;
 
     /**
      * @var
@@ -68,26 +68,35 @@ class Model{
 
     public function __construct()
     {
-        $this->getDatabase();
+        $this->db = $this->getDatabase();
         $db_config = Db::getConfig()['master'];
         $this->prefix = $db_config['tablepre'];
-        $this->table = $this->getModelName();
+        if( empty($this->table) ){
+            $this->table = $this->getModelName();
+        }
         $this->options['table'] = $this->table;
     }
 
+    /**
+     * @return string
+     */
     public function getModelName()
     {
         $sub_arr = explode('\\', get_class($this));
         $sub_class = end($sub_arr);
-        return  $this->prefix.to_underscore($sub_class);
+        $table = $this->prefix.to_underscore($sub_class);
+        return $table;
     }
 
+    /*
+     * @return false or object
+     */
     public function getDatabase( $id = 'master' )
     {
         $key = 'database_'.$id;
         $database_config = Db::getConfig();
         if( empty($database_config) ){
-            return false;
+            throw new Exception('No config');
         }
         if( $id == 'master' ){
             $db_config = $database_config['master'];
@@ -106,8 +115,7 @@ class Model{
             $db->open($db_config);
             Register::set($key, $db);
         }
-        $this->db = $db;
-
+        return $db;
     }
 
     public function __call($name ,$arguments)
@@ -135,8 +143,7 @@ class Model{
     {
 
         if (empty($data)) {
-            $this->error = 'The insert array is required!';
-            return false;
+            throw new Exception('The insert array is required!');
         }
         $fields = array_keys($data);
         $values = array_values($data);
@@ -164,8 +171,7 @@ class Model{
     public function update($data = [], $return_affected_rows = false)
     {
         if (empty($data)) {
-            $this->error = 'To update array is required!';
-            return false;
+            throw new Exception('To update array is required!');
         }
         $data_sql = '';
         foreach ($data as $key => $values) {
@@ -174,8 +180,7 @@ class Model{
         $data_sql = substr($data_sql, 0, -1);
 
         if (empty($this->options['where'])) {
-            $this->error = 'The condition is required.';
-            return false;
+            throw new Exception('The condition is required.');
         }
         $this->beforeAction();
         $sql = 'UPDATE '.$this->options['table'].' SET '.$data_sql.$this->options['where'];
@@ -248,8 +253,7 @@ class Model{
     public function delete()
     {
         if( empty($this->options['where']) ){
-            $this->error = 'The condition is required.';
-            return false;
+            throw new Exception('The condition is required.');
         }
         $sql = 'DELETE FROM  '.$this->options['table'].$this->options['where'];
         $this->afterAction();
@@ -492,7 +496,7 @@ class Model{
      * @return string
      *
      */
-    public function display_table($data)
+    public function displayTable($data)
     {
         $out = '';
         $out .= '<table border=1><tr>';
@@ -530,13 +534,6 @@ class Model{
         }
         return false;
     }
-
-    public function throwException($message)
-    {
-        echo $message;
-        exit();
-    }
-
 
     public function resetOptions()
     {
