@@ -3,7 +3,7 @@
     "description": "the database driver",
     "require": {
 		"php": ">=5.4",
-         "nezumi/myfunctions": "dev-master"
+        "nezumi/myfunctions": "dev-master"
     },
     "authors": [
         {
