@@ -8,15 +8,20 @@
 
 namespace Nezumi;
 
-use Builder;
+use Exception;
 use Nezumi\Drivers\Mysql\PDOMySql;
 
 class Query{
 
     /**
-     * @var string name of table
+     * @var 
      */
     protected $db;
+
+    /**
+     * @var 
+     */
+    protected $builder;
 
     /**
      * @var string
@@ -30,11 +35,13 @@ class Query{
         'having' => '',
         'order' => '',
         'limit' => '',
+        'data' => '',
     ];
 
     public function __construct()
     {
         $this->db = $this->getDatabase();
+        $this->builder = new Builder();
     }
 
     public function table($table)
@@ -77,7 +84,7 @@ class Query{
     {
         if( array_key_exists($name, $this->options) ){
             $method = 'parse'.ucwords($name);
-            $result = $this->$method($arguments[0]);
+            $result = $this->builder->$method($arguments[0]);
             $this->options[$name] = $result;
             return $this;
         }
@@ -99,20 +106,11 @@ class Query{
         if (empty($data)) {
             throw new Exception('The insert array is required!');
         }
-        $fields = array_keys($data);
-        $values = array_values($data);
-
-        array_walk($fields, array($this, 'addBackquote'));
-        array_walk($values, array($this, 'addQuotes'));
-
-        $fields_str = implode(',', $fields);
-        $values_str = implode(',', $values);
-        $method = $replace ? 'REPLACE' : 'INSERT';
-
+        $this->options['data'] = $data; 
         $this->beforeAction();
-        $insert_sql = $method.' INTO '.$this->options['table'].'('.$fields_str.')'.' values('.$values_str.')';
+        $sql = $this->builder->insert($this, $replace);
+        $return = $this->db->query($sql);
         $this->afterAction();
-        $return = $this->db->query($insert_sql);
         return $return_insert_id ? $this->db->insert_id() : $return;
     }
 
@@ -126,18 +124,12 @@ class Query{
     {
         if (empty($data)) {
             throw new Exception('To update array is required!');
-        }
-        $data_sql = '';
-        foreach ($data as $key => $values) {
-            $data_sql .= $this->addBackquote($key).'='.$this->addQuotes($values).',';
-        }
-        $data_sql = substr($data_sql, 0, -1);
-
-        if (empty($this->options['where'])) {
+        } else if (empty($this->options['where'])) {
             throw new Exception('The condition is required.');
         }
+        $this->options['data'] = $data; 
         $this->beforeAction();
-        $sql = 'UPDATE '.$this->options['table'].' SET '.$data_sql.$this->options['where'];
+        $sql = $this->builder->update($this);
         $this->afterAction();
         $return = $this->db->query($sql);
         return $return_affected_rows ? $this->affected_rows() : $return;
@@ -149,7 +141,7 @@ class Query{
      */
     public function select()
     {
-        $sql = $this->builcSelectSql();
+        $sql = $this->buildSelectSql();
         return $this->db->fetch_all($sql);
     }
 
@@ -161,21 +153,20 @@ class Query{
      */
     public function get_one()
     {
-        $sql = $this->builcSelectSql();
+        $sql = $this->buildSelectSql();
         return $this->db->fetch_one($sql);
     }
 
     /**
-     * gets sql
+     * gets select sql
      *
      * @return string
      *
      */
-    public function builcSelectSql()
+    public function buildSelectSql()
     {
         $this->beforeAction();
-        $this->options = array_insert($this->options, 1, ['FROM']);
-        $sql = 'SELECT '.implode(' ', $this->options);
+        $sql = $this->builder->select($this);
         $this->afterAction();
         return $sql;
     }
@@ -209,7 +200,8 @@ class Query{
         if( empty($this->options['where']) ){
             throw new Exception('The condition is required.');
         }
-        $sql = 'DELETE FROM  '.$this->options['table'].$this->options['where'];
+        // $sql = 'DELETE FROM  '.$this->options['table'].$this->options['where'];
+        $sql = $this->builder->delete($this);
         $this->afterAction();
         return $this->db->query($sql);
     }
@@ -240,40 +232,6 @@ class Query{
     protected function afterAction()
     {
         $this->resetOptions();
-    }
-
-
-    /**
-     * Add backquote
-     *
-     * @param string $fields
-     *
-     * @return string
-     *
-     */
-    public function addBackquote(&$value){
-        if( strpos($value,'`') === false ){
-            $value = '`'.trim($value).'`';
-        }
-        return $value;
-    }
-
-    /**
-     * Add ''
-     *
-     * @param string $fields
-     *
-     * @return string
-     *
-     */
-    public function addQuotes(&$value, $key = '' , $user_data = '', $quotation=1){
-        if($quotation){
-            $quot = '\'';
-        } else {
-            $quot = '';
-        }
-        $value = $quot.$value.$quot;
-        return $value;
     }
 
     /**
@@ -320,176 +278,11 @@ class Query{
             'having' => '',
             'order' => '',
             'limit' => '',
+            'data' => '',
         ];
         if( !empty($table) ){
             $this->options['table'] = $table;
         }
     }
-
-    /**
-     * Parse fields
-     *
-     * @param string or array
-     *
-     * @return string
-     */
-    public function parseFields($data){
-        $str = '';
-        if( is_string($data) && trim($data)== '*'){
-            $str = '*';
-        } else if( is_string($data) ){
-            $arr = explode(',', $data);
-            $str = implode(',', $arr);
-        } else if( is_array($data)  ){
-            $str = implode(',', $data);
-        } else {
-            $str = '*';
-        }
-        return $str;
-    }
-
-    /**
-     * Parse fields
-     *
-     * @param string or array
-     *
-     * @return string
-     */
-    public function parseTable($str){
-        return $str;
-    }
-
-    /**
-     * Parse where
-     *
-     * @param string $where
-     *
-     * @return string
-     *
-     */
-    public function parseWhere($data)
-    {
-        $str = '';
-        if( $data == '' ){
-            return $str;
-        } else if( is_string($data) ){
-            $str = ' WHERE '.$data;
-        } else if( is_array($data) ){
-            $i = 0;
-            $str .= ' WHERE ';
-            foreach ($data as $key => $values) {
-                $link = $i!=0 ? ' AND ' : '';
-                $str .= $link.$this->addBackquote($key).'='.$this->addQuotes($values);
-                $i++;
-            }
-        }
-        return $str;
-    }
-
-    /**
-     * Parse group
-     *
-     * @param string $group
-     *
-     * @return string
-     *
-     */
-    public function parseGroup($group)
-    {
-        $group_str = '';
-        if( $group == '' ){
-            return $group_str;
-        } else if( is_string($group) ){
-            $group_str = ' GROUP BY '.$group;
-        } else if( is_array($group) ){
-            $group_str = ' GROUP BY '.implode(',', $group);
-        }
-        return $group_str;
-    }
-
-    /**
-     * Parse having
-     *
-     * @param string $having
-     *
-     * @return string
-     *
-     */
-    public function parseHaving($having)
-    {
-        $having_str = '';
-        if( $having == '' ){
-            return $having_str;
-        } else if( is_string($having) ){
-            $having_str = ' HAVING '.$having;
-        }
-        return $having_str;
-    }
-
-    /**
-     *
-     *
-     * @param
-     *
-     * @return string
-     *
-     */
-    public function parseJoin($data)
-    {
-        $str = '';
-        if( $data == '' ){
-            return $str;
-        } else if( is_string($data) ){
-            $str = ' LEFT JOIN '.$data;
-        }
-        return $str;
-    }
-
-    /**
-     * Parse order
-     *
-     * @param string $order
-     *
-     * @return string
-     *
-     */
-    public function parseOrder($order)
-    {
-        $order_str = '';
-        if( $order == '' ){
-            return $order_str;
-        } else if( is_string($order) ){
-            $order_str = ' ORDER BY '.$order;
-        } else if( is_array($order) ){
-            $order_str = ' ORDER BY '.implode(',', $order);
-        }
-        return $order_str;
-    }
-
-    /**
-     * Parse limit
-     *
-     * @param string $limit
-     *
-     * @return string
-     *
-     */
-    public function parseLimit($limit)
-    {
-        $limit_str = '';
-        if( $limit == '' ){
-            return $limit_str;
-        } else if( is_string($limit) || is_numeric($limit) ){
-            $limit_str = ' LIMIT '.$limit;
-        } else if( is_array($limit) ){
-            if( count($limit)==1 ){
-                $limit_str = ' LIMIT '.$limit[0];
-            } else {
-                $limit_str = ' LIMIT '.$limit[0].','.$limit[1];
-            }
-        }
-        return $limit_str;
-    }
-
 
 }
