@@ -25,9 +25,10 @@ class Query{
 
     /**
      * @var string
+     * 
      */
     public $options = [
-        'fields' => '*',
+        'field' => '',
         'table' => '',
         'join' => '',
         'where' => '',
@@ -36,6 +37,7 @@ class Query{
         'order' => '',
         'limit' => '',
         'data' => '',
+        'fetch_sql' => false,
     ];
 
     public function __construct()
@@ -44,9 +46,21 @@ class Query{
         $this->builder = new Builder();
     }
 
+    /**
+     * 
+     */
     public function table($table)
     {
-        $this->options['table'] = $table;
+        $this->setOption('table', $table);
+        return $this;
+    }
+
+    /**
+     * 
+     */
+    public function alias($name)
+    {
+        $this->setOption('table', $this->getOptions('table').' AS '.$name);
         return $this;
     }
 
@@ -82,7 +96,7 @@ class Query{
 
     public function __call($name ,$arguments)
     {
-        if( array_key_exists($name, $this->options) ){
+        if( in_array($name, ['field', 'table', 'join', 'where', 'group', 'having', 'order', 'limit']) ){
             $method = 'parse'.ucwords($name);
             $result = $this->builder->$method($arguments[0]);
             $this->options[$name] = $result;
@@ -101,11 +115,8 @@ class Query{
      *  @return boolean,query resource,int
      *
      */
-    public function insert( $data = '', $return_insert_id = false, $replace = false )
+    public function insert( $data, $return_insert_id = false, $replace = false )
     {
-        if (empty($data)) {
-            throw new Exception('The insert array is required!');
-        }
         $this->options['data'] = $data; 
         $this->beforeAction();
         $sql = $this->builder->insert($this, $replace);
@@ -120,11 +131,9 @@ class Query{
      *  @return int number of affected rows in previous MySQL operation
      *
      */
-    public function update($data = [], $return_affected_rows = false)
+    public function update($data, $return_affected_rows = false)
     {
-        if (empty($data)) {
-            throw new Exception('To update array is required!');
-        } else if (empty($this->options['where'])) {
+        if (empty($this->options['where'])) {
             throw new Exception('The condition is required.');
         }
         $this->options['data'] = $data; 
@@ -163,12 +172,12 @@ class Query{
      * @return string
      *
      */
-    public function buildSelectSql()
+    public function buildSelectSql($sub = false)
     {
         $this->beforeAction();
         $sql = $this->builder->select($this);
         $this->afterAction();
-        return $sql;
+        return $sub ? '('.$sql.')' : $sql;
     }
 
     /**
@@ -180,10 +189,10 @@ class Query{
      * @return array or false
      *
      */
-    public function getByPrimary($table, $primary, $fields = '*')
+    public function getByPrimary($table, $primary, $field = '*')
     {
         $sql = 'select %s from %s where '.$this->getPrimary($table).'=%d';
-        $sprintf_sql = sprintf($sql, $this->parseFields($fields), $table, $primary);
+        $sprintf_sql = sprintf($sql, $this->parsefield($field), $table, $primary);
         return  $this->fetch_one($sprintf_sql);
     }
 
@@ -260,10 +269,12 @@ class Query{
             $out .= '</tr>';
         }
         $out .= '</table>';
-
         return $out;
     }
 
+    /**
+     * 
+     */
     public function resetOptions()
     {
         if( !empty($this->options['table']) ){
@@ -279,10 +290,122 @@ class Query{
             'order' => '',
             'limit' => '',
             'data' => '',
+            'fetch_sql' => false,
         ];
         if( !empty($table) ){
-            $this->options['table'] = $table;
+            $this->setOption('table', $table);
         }
+    }
+
+
+    /**
+     * 
+     */  
+    public function setOption($name, $value)
+    {
+        $this->options[$name] = $value;
+    }    
+
+    /**
+     * @return mixed 
+     */  
+    public function getOptions($name = '')
+    {
+        if( '' === $name ){
+            return $this->options;
+        }
+        return isset($this->options[$name]) ? $this->options[$name] : NULL;
+    }   
+    
+    /**
+     * 
+     */  
+    public function removeOption($name)
+    {
+        unset($this->options[$name]);
+    }
+
+    /**
+     * 
+     */
+    public function count($field = '*')
+    {
+        if( !empty($this->getOptions('group')) ){
+            $fieldValue = 'COUNT('.$field.')';
+            $this->setOption('field', $fieldValue);
+            $fetchSql = $this->getOptions('fetch_sql');
+            $table = $this->buildSelectSql(true);
+            $this->table($table);
+            return $this->aggregate('COUNT', '*', true, $fetchSql);  
+        }
+        return $this->aggregate('COUNT', $field); 
+    }
+
+    /**
+     * 
+     */
+    public function max($field)
+    {
+        return $this->aggregate('MAX', $field); 
+    }
+
+    /**
+     * 
+     */
+    public function min($field)
+    {
+        return $this->aggregate('MIN', $field); 
+    }
+
+    /**
+     * 
+     */
+    public function avg($field)
+    {
+        return $this->aggregate('AVG', $field); 
+    }
+
+    /**
+     * 
+     */
+    public function sum($field)
+    {
+        return $this->aggregate('SUM', $field); 
+    }
+
+    /**
+     * 
+     */
+    public function aggregate($name, $field, $group = false, $fetchSql = false)
+    {
+        if( !empty($this->options['field']) ){
+            $this->removeOption('field');
+        }
+        $fielValue = $name.'('.$field.') AS tmp_'.strtolower($name);
+        $this->setOption('field', $fielValue);
+        $this->setOption('limit', $this->builder->parseLimit(1));
+        if( !$fetchSql ){
+            $fetchSql = $this->getOptions('fetch_sql'); 
+        }
+        if( $group ){
+            $this->alias('_group_count');
+        }
+        
+        $sql = $this->buildSelectSql();
+        //whether return sql
+        if( $fetchSql  ){
+            return $sql;
+        }
+        return $this->db->fetch_column($sql);
+    }
+
+    /**
+     * 
+     */
+    public function fetchSql()
+    {
+        $this->setOption('fetch_sql', true);
+        return $this;
     }
 
 }

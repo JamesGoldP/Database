@@ -60,7 +60,9 @@ class PDOMySql implements ADatabase
 	    return $this->link;		
 	}
 
-
+    /**
+     * 
+     */
     public function query($sql)
     {
         if($sql==''){
@@ -102,10 +104,10 @@ class PDOMySql implements ADatabase
  
 
     /**
-     * 查询多条记录.
+     * get multi records
      *
-     * @param string $sql 查询sql
-     * @param constant $type 返回结果集类型 
+     * @param string $sql sql
+     * @param constant $type return type
      *                    PDO::FETCH_BOTH  PDO::FETCH_ASSOC PDO::FETCH_NUM
      * 
      * @return array $result 
@@ -118,25 +120,34 @@ class PDOMySql implements ADatabase
 	}
 
 	/**
-     * 查询一条记录.
+     * get one record
      *
-     * @param string $sql 查询sql
-     * @param constant $type 返回结果集类型 
+     * @param string $sql sql
+     * @param constant $type return type 
      *                    PDO::FETCH_BOTH  PDO::FETCH_ASSOC PDO::FETCH_NUM
      * 
      * @return array $result 
      * 
      */
 	public function fetch_one($sql, $type = PDO::FETCH_ASSOC) {
-    	if($sql==''){
-			$this->error = 'sql不能为空';
-            return false;
-		}
 		$this->query($sql);
 		$result = $this->fetch($type);
 		return $result;	
-	}
+    }
 
+    /**
+     * get a value of the special column
+     *
+     * @param string $sql sql
+     * @return  mixed 
+     * 
+     */
+	public function fetch_column($sql) {
+		$this->query($sql);
+        $res = $this->statement->fetchColumn();
+        return $res; 
+    }
+   
     /**
      * 查询一条记录获取类型
      *
@@ -154,7 +165,6 @@ class PDOMySql implements ADatabase
         }
         return $res; 
     }
-
 
     /**
      * 释放不需要的statement

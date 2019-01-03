@@ -13,7 +13,7 @@ class Builder{
     /**
      * 
      */
-    protected $selectSql = 'SELECT %FIELDS% FROM %TABLE% %JOIN% %WHERE% %GROUP% %HAVING% %ORDER% %LIMIT%'; 
+    protected $selectSql = 'SELECT %field% FROM %TABLE%%JOIN%%WHERE%%GROUP%%HAVING%%ORDER%%LIMIT%'; 
 
     /**
      * 
@@ -28,7 +28,7 @@ class Builder{
     /**
      * 
      */
-    protected $insertSql = '%INSERT% INTO %TABLE%(%FIELDS% ) values(%VALUES%)';  
+    protected $insertSql = '%INSERT% INTO %TABLE%(%field% ) values(%VALUES%)';  
    
     /**
      * 
@@ -47,9 +47,10 @@ class Builder{
     public function select($query)
     {
         $options = $query->options;
-        $search = ['%FIELDS%', '%TABLE%', '%JOIN%', '%WHERE%', '%GROUP%', '%HAVING%', '%ORDER%', '%LIMIT%'];
-        $replace = [$options['fields'], $options['table'], $options['join'], $options['where'], $options['group'], $options['having'], $options['order'], $options['limit']];
-        return str_replace($search, $replace, $this->selectSql);
+        $search = ['%field%', '%TABLE%', '%JOIN%', '%WHERE%', '%GROUP%', '%HAVING%', '%ORDER%', '%LIMIT%'];
+        $replace = [$options['field'], $options['table'], $options['join'], $options['where'], $options['group'], $options['having'], $options['order'], $options['limit']];
+        $sql = str_replace($search, $replace, $this->selectSql);
+        return $sql;
     }
 
     /**
@@ -77,25 +78,25 @@ class Builder{
     {
         $options = $query->options;
         $data = $options['data'];
-        $fields = array_keys($data);
+        $field = array_keys($data);
         $values = array_values($data);
 
-        array_walk($fields, [$this, 'addBackquote']);
+        array_walk($field, [$this, 'addBackquote']);
         array_walk($values, [$this, 'addQuotes']);
 
-        $fields_str = implode(',', $fields);
+        $field_str = implode(',', $field);
         $values_str = implode(',', $values);
         $method = $replace ? 'REPLACE' : 'INSERT';
-        // $insert_sql = $method.' INTO '.$this->options['table'].'('.$fields_str.')'.' values('.$values_str.')';
-        $search = ['%INSERT%', '%TABLE%', '%FIELDS%', '%VALUES%'];
-        $replace = [$method, $options['table'], $fields_str, $values_str];
+        // $insert_sql = $method.' INTO '.$this->options['table'].'('.$field_str.')'.' values('.$values_str.')';
+        $search = ['%INSERT%', '%TABLE%', '%field%', '%VALUES%'];
+        $replace = [$method, $options['table'], $field_str, $values_str];
         return str_replace($search, $replace, $this->insertSql);
     }
 
     /**
      * Add backquote
      *
-     * @param string $fields
+     * @param string $field
      *
      * @return string
      *
@@ -110,7 +111,7 @@ class Builder{
     /**
      * Add ''
      *
-     * @param string $fields
+     * @param string $field
      *
      * @return string
      *
@@ -127,15 +128,15 @@ class Builder{
 
 
     /**
-     * Parse fields
+     * Parse field
      *
      * @param string or array
      *
      * @return string
      */
-    public function parseFields($data){
+    public function parseField($data){
         $str = '';
-        if( is_string($data) && trim($data)== '*'){
+        if( is_string($data) && trim($data) == '*'){
             $str = '*';
         } else if( is_string($data) ){
             $arr = explode(',', $data);
@@ -149,7 +150,7 @@ class Builder{
     }
 
     /**
-     * Parse fields
+     * Parse field
      *
      * @param string or array
      *
@@ -196,15 +197,15 @@ class Builder{
      */
     public function parseGroup($group)
     {
-        $group_str = '';
+        $str = '';
         if( $group == '' ){
-            return $group_str;
+            return $str;
         } else if( is_string($group) ){
-            $group_str = ' GROUP BY '.$group;
+            $str = ' GROUP BY '.$group;
         } else if( is_array($group) ){
-            $group_str = ' GROUP BY '.implode(',', $group);
+            $str = ' GROUP BY '.implode(',', $group);
         }
-        return $group_str;
+        return $str;
     }
 
     /**
@@ -217,13 +218,13 @@ class Builder{
      */
     public function parseHaving($having)
     {
-        $having_str = '';
+        $str = '';
         if( $having == '' ){
-            return $having_str;
+            return $str;
         } else if( is_string($having) ){
-            $having_str = ' HAVING '.$having;
+            $str = ' HAVING '.$having;
         }
-        return $having_str;
+        return $str;
     }
 
     /**
