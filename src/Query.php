@@ -9,7 +9,6 @@
 namespace Nezumi;
 
 use Exception;
-use Nezumi\Drivers\Mysql\PDOMySql;
 
 class Query{
 
@@ -43,7 +42,7 @@ class Query{
     public function __construct()
     {
         $this->db = $this->getDatabase();
-        $this->builder = new Builder();
+        
     }
 
     /**
@@ -70,25 +69,22 @@ class Query{
     public function getDatabase( $id = 'master' )
     {
         $key = 'database_'.$id;
-        $database_config = Db::getConfig();
-        if( empty($database_config) ){
+        $databaseConfig = Db::getConfig();
+        if( empty($databaseConfig) ){
             throw new Exception('No config');
         }
         if( $id == 'master' ){
-            $db_config = $database_config['master'];
+            $dbConfig = $databaseConfig['master'];
         } else {
-            $db_config = $database_config[array_rand($database_config['slave'])];
+            $dbConfig = $databaseConfig[array_rand($databaseConfig['slave'])];
         }
+        $buildClass = 'Nezumi\\builder\\'.ucfirst($dbConfig['type']);
+        $this->builder = new $buildClass;
         $db = Register::get($key);
         if( !$db ){
-            switch ($db_config['type']) {
-                case 'pdo':
-                    $db = new PDOMySql();
-                    break;
-                default:
-                    $db = new PDOMySql();
-            }
-            $db->open($db_config);
+            $connectorClass = 'Nezumi\\connector\\'.ucfirst($dbConfig['type']); 
+            $db = new $connectorClass;
+            $db->open($dbConfig);
             Register::set($key, $db);
         }
         return $db;
@@ -122,7 +118,7 @@ class Query{
         $sql = $this->builder->insert($this, $replace);
         $return = $this->db->query($sql);
         $this->afterAction();
-        return $return_insert_id ? $this->db->insert_id() : $return;
+        return $return_insert_id ? $this->db->insertId() : $return;
     }
 
     /**
@@ -136,12 +132,12 @@ class Query{
         if (empty($this->options['where'])) {
             throw new Exception('The condition is required.');
         }
-        $this->options['data'] = $data; 
+        $this->setOption('data', $data); 
         $this->beforeAction();
         $sql = $this->builder->update($this);
         $this->afterAction();
         $return = $this->db->query($sql);
-        return $return_affected_rows ? $this->affected_rows() : $return;
+        return $return_affected_rows ? $this->affectedRows() : $return;
     }
 
     /**
@@ -151,7 +147,7 @@ class Query{
     public function select()
     {
         $sql = $this->buildSelectSql();
-        return $this->db->fetch_all($sql);
+        return $this->db->fetchAll($sql);
     }
 
     /**
@@ -160,10 +156,10 @@ class Query{
      * @return type
      *
      */
-    public function get_one()
+    public function find()
     {
         $sql = $this->buildSelectSql();
-        return $this->db->fetch_one($sql);
+        return $this->db->fetchOne($sql);
     }
 
     /**
@@ -193,7 +189,7 @@ class Query{
     {
         $sql = 'select %s from %s where '.$this->getPrimary($table).'=%d';
         $sprintf_sql = sprintf($sql, $this->parsefield($field), $table, $primary);
-        return  $this->fetch_one($sprintf_sql);
+        return  $this->fetchOne($sprintf_sql);
     }
 
     /**
@@ -259,7 +255,6 @@ class Query{
         foreach ($data[0] as $key => $value) {
             $out .= "<td>$key</td>";
         }
-
         $out .= '</tr>';
         foreach ($data as $key => $value) {
             $out .= '<tr>';
@@ -296,7 +291,6 @@ class Query{
             $this->setOption('table', $table);
         }
     }
-
 
     /**
      * 

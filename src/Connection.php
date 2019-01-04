@@ -1,9 +1,9 @@
 <?php
-namespace Nezumi\Drivers\Mysql;
+namespace Nezumi;
 
 use PDO;
 
-class PDOMySql implements ADatabase
+class Connection
 {
 
     /**
@@ -21,29 +21,22 @@ class PDOMySql implements ADatabase
      */
     protected $config;
 
-    /**
-     * @var database conntion error
-     */
-    protected $error;
-
     public function open($config)
     {
-        if(empty($config)){
-            $this->error = '没有定义数据库配置';
-            return false;
-        }
         $this->config = $config;
         if( $this->config['autoconnect'] ){
             $this->connect();
         }
     }
 
+    /**
+     * 
+     */
 	public function connect(){
 		//检查pdo类是否可用
 		if(!class_exists('PDO')){
-			$this->error = '不支持PDO，请先开启';
-            return false;
-		}
+            throw new Exception('Do not support PDO');
+        }
 		//whether long connection
         if( $this->config['pconnect'] ){
             $this->config['params'][constant('PDO::ATTR_PERSISTENT')] = true;
@@ -53,8 +46,7 @@ class PDOMySql implements ADatabase
             $this->config['params'] = isset($this->config['params']) ? $this->config['params'] : array(); 
 			$this->link = new PDO('mysql:host='.$this->config['hostname'].';dbname='.$this->config['database'], $this->config['username'], $this->config['password'], $this->config['params']);
 		} catch (PDOException $e){
-			$this->error = $e->getMessage();
-            return false;
+            throw new Exception($e->getMessage());
 		}
         $this->link->exec('SET NAMES '.$this->config['charset']);
 	    return $this->link;		
@@ -65,10 +57,6 @@ class PDOMySql implements ADatabase
      */
     public function query($sql)
     {
-        if($sql==''){
-            $this->error = 'sql不能为空';
-            return false;
-        }
         if( !$this->link ){
             $this->connect();
         }
@@ -87,10 +75,6 @@ class PDOMySql implements ADatabase
      */
     public function execute($sql)
     {
-        if($sql==''){
-            $this->error = 'sql不能为空';
-            return false;
-        }
         if( !$this->link ){
             $this->connect();
         }
@@ -100,8 +84,6 @@ class PDOMySql implements ADatabase
         }
         return $this->link->exec($sql);
     }
-
- 
 
     /**
      * get multi records
@@ -113,7 +95,7 @@ class PDOMySql implements ADatabase
      * @return array $result 
      * 
      */
-    public function fetch_all($sql, $type = PDO::FETCH_ASSOC) {
+    public function fetchAll($sql, $type = PDO::FETCH_ASSOC) {
 		$this->query($sql);
 		$result = $this->statement->fetchAll($type);
 		return $result;	
@@ -129,7 +111,7 @@ class PDOMySql implements ADatabase
      * @return array $result 
      * 
      */
-	public function fetch_one($sql, $type = PDO::FETCH_ASSOC) {
+	public function fetchOne($sql, $type = PDO::FETCH_ASSOC) {
 		$this->query($sql);
 		$result = $this->fetch($type);
 		return $result;	
@@ -142,7 +124,7 @@ class PDOMySql implements ADatabase
      * @return  mixed 
      * 
      */
-	public function fetch_column($sql) {
+	public function fetchColumn($sql) {
 		$this->query($sql);
         $res = $this->statement->fetchColumn();
         return $res; 
@@ -181,7 +163,7 @@ class PDOMySql implements ADatabase
      * @return int
      * 
      */
-    public function affected_rows()
+    public function affectedRows()
     {
         return $this->statement->rowCount();
     }
@@ -192,7 +174,7 @@ class PDOMySql implements ADatabase
      * @return int
      * 
      */
-    public function insert_id()
+    public function insertId()
     {
         return $this->link->lastInsertId();
     }
@@ -206,11 +188,4 @@ class PDOMySql implements ADatabase
         $this->link = NULL;
     }
 
-    /**
-     * get the inner error info.
-     */
-    public function get_error()
-    {
-        return array($this->link->errorCode()=>$this->link->errorInfo());
-    }
 }

@@ -19,7 +19,7 @@ class Builder{
      * 
      */
     protected $deleteSql = 'DELETE FROM %TABLE% %WHERE%';  
-    
+
     /**
      * 
      */
@@ -28,7 +28,7 @@ class Builder{
     /**
      * 
      */
-    protected $insertSql = '%INSERT% INTO %TABLE%(%field% ) values(%VALUES%)';  
+    protected $insertSql = '%INSERT% INTO %TABLE%(%field%) values(%VALUES%)';  
    
     /**
      * 
