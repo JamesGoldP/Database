@@ -23,11 +23,12 @@ class Query{
     protected $builder;
 
     /**
+     * query params
      * @var string
      * 
      */
     public $options = [
-        'field' => '',
+        'field' => '*',
         'table' => '',
         'join' => '',
         'where' => '',
@@ -92,11 +93,16 @@ class Query{
 
     public function __call($name ,$arguments)
     {
-        if( in_array($name, ['field', 'table', 'join', 'where', 'group', 'having', 'order', 'limit']) ){
+        if( in_array($name, ['field', 'table', 'where', 'group', 'having', 'order', 'limit']) ){
             $method = 'parse'.ucwords($name);
-            $result = $this->builder->$method($arguments[0]);
+            $result = call_user_func_array([$this->builder, $method], $arguments);
             $this->options[$name] = $result;
             return $this;
+        } else if( 'join' == $name ) {
+            $method = 'parse'.ucwords($name);
+            $result = call_user_func_array([$this->builder, $method], $arguments);
+            $this->options[$name] .= $result;
+            return $this; 
         }
     }
 
@@ -116,8 +122,12 @@ class Query{
         $this->options['data'] = $data; 
         $this->beforeAction();
         $sql = $this->builder->insert($this, $replace);
-        $return = $this->db->query($sql);
+        $fetchSql = $this->getOptions('fetch_sql');
         $this->afterAction();
+        if( $fetchSql ){
+            return $sql;
+        }
+        $return = $this->db->query($sql);
         return $return_insert_id ? $this->db->insertId() : $return;
     }
 
@@ -135,7 +145,11 @@ class Query{
         $this->setOption('data', $data); 
         $this->beforeAction();
         $sql = $this->builder->update($this);
+        $fetchSql = $this->getOptions('fetch_sql');
         $this->afterAction();
+        if( $fetchSql ){
+            return $sql;
+        }
         $return = $this->db->query($sql);
         return $return_affected_rows ? $this->affectedRows() : $return;
     }
@@ -146,7 +160,13 @@ class Query{
      */
     public function select()
     {
+        $this->beforeAction();
         $sql = $this->buildSelectSql();
+        $fetchSql = $this->getOptions('fetch_sql');
+        $this->afterAction();
+        if( $fetchSql ){
+            return $sql;
+        }
         return $this->db->fetchAll($sql);
     }
 
@@ -158,7 +178,9 @@ class Query{
      */
     public function find()
     {
+        $this->beforeAction();
         $sql = $this->buildSelectSql();
+        $this->afterAction();
         return $this->db->fetchOne($sql);
     }
 
@@ -170,9 +192,7 @@ class Query{
      */
     public function buildSelectSql($sub = false)
     {
-        $this->beforeAction();
         $sql = $this->builder->select($this);
-        $this->afterAction();
         return $sub ? '('.$sql.')' : $sql;
     }
 
@@ -206,8 +226,13 @@ class Query{
             throw new Exception('The condition is required.');
         }
         // $sql = 'DELETE FROM  '.$this->options['table'].$this->options['where'];
+        $this->beforeAction();
         $sql = $this->builder->delete($this);
+        $fetchSql = $this->getOptions('fetch_sql');
         $this->afterAction();
+        if( $fetchSql ){
+            return $sql;
+        }
         return $this->db->query($sql);
     }
 
@@ -330,6 +355,7 @@ class Query{
             $fetchSql = $this->getOptions('fetch_sql');
             $table = $this->buildSelectSql(true);
             $this->table($table);
+            $this->resetOptions();
             return $this->aggregate('COUNT', '*', true, $fetchSql);  
         }
         return $this->aggregate('COUNT', $field); 
@@ -390,15 +416,15 @@ class Query{
         if( $fetchSql  ){
             return $sql;
         }
-        return $this->db->fetch_column($sql);
+        return $this->db->fetchColumn($sql);
     }
 
     /**
      * 
      */
-    public function fetchSql()
+    public function fetchSql($fetch = true)
     {
-        $this->setOption('fetch_sql', true);
+        $this->setOption('fetch_sql', $fetch);
         return $this;
     }
 

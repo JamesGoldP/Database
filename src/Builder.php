@@ -13,7 +13,7 @@ class Builder{
     /**
      * 
      */
-    protected $selectSql = 'SELECT %field% FROM %TABLE%%JOIN%%WHERE%%GROUP%%HAVING%%ORDER%%LIMIT%'; 
+    protected $selectSql = 'SELECT %FIELD% FROM %TABLE%%JOIN%%WHERE%%GROUP%%HAVING%%ORDER%%LIMIT%'; 
 
     /**
      * 
@@ -28,7 +28,7 @@ class Builder{
     /**
      * 
      */
-    protected $insertSql = '%INSERT% INTO %TABLE%(%field%) values(%VALUES%)';  
+    protected $insertSql = '%INSERT% INTO %TABLE%(%FIELD%) values(%VALUES%)';  
    
     /**
      * 
@@ -47,7 +47,7 @@ class Builder{
     public function select($query)
     {
         $options = $query->options;
-        $search = ['%field%', '%TABLE%', '%JOIN%', '%WHERE%', '%GROUP%', '%HAVING%', '%ORDER%', '%LIMIT%'];
+        $search = ['%FIELD%', '%TABLE%', '%JOIN%', '%WHERE%', '%GROUP%', '%HAVING%', '%ORDER%', '%LIMIT%'];
         $replace = [$options['field'], $options['table'], $options['join'], $options['where'], $options['group'], $options['having'], $options['order'], $options['limit']];
         $sql = str_replace($search, $replace, $this->selectSql);
         return $sql;
@@ -88,7 +88,7 @@ class Builder{
         $values_str = implode(',', $values);
         $method = $replace ? 'REPLACE' : 'INSERT';
         // $insert_sql = $method.' INTO '.$this->options['table'].'('.$field_str.')'.' values('.$values_str.')';
-        $search = ['%INSERT%', '%TABLE%', '%field%', '%VALUES%'];
+        $search = ['%INSERT%', '%TABLE%', '%FIELD%', '%VALUES%'];
         $replace = [$method, $options['table'], $field_str, $values_str];
         return str_replace($search, $replace, $this->insertSql);
     }
@@ -235,13 +235,11 @@ class Builder{
      * @return string
      *
      */
-    public function parseJoin($data)
+    public function parseJoin($data, $condition = NULL, $type = 'INNER')
     {
         $str = '';
-        if( $data == '' ){
-            return $str;
-        } else if( is_string($data) ){
-            $str = ' LEFT JOIN '.$data;
+        if( !empty($data) ){
+            $str = ' '.$type.' JOIN '.$data.' ON '.$condition;
         }
         return $str;
     }
@@ -256,15 +254,15 @@ class Builder{
      */
     public function parseOrder($order)
     {
-        $order_str = '';
+        $str = '';
         if( $order == '' ){
-            return $order_str;
+            return $str;
         } else if( is_string($order) ){
-            $order_str = ' ORDER BY '.$order;
+            $str = ' ORDER BY '.$order;
         } else if( is_array($order) ){
-            $order_str = ' ORDER BY '.implode(',', $order);
+            $str = ' ORDER BY '.implode(',', $order);
         }
-        return $order_str;
+        return $str;
     }
 
     /**
