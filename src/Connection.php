@@ -188,4 +188,35 @@ class Connection
         $this->link = NULL;
     }
 
+    /**
+     * start transaction
+     * @return type
+     */
+    public function startTrans()
+    {
+        if( !$this->link ){
+            $this->connect();
+        }
+        $this->link->beginTransaction();
+    }
+
+    /**
+     * auto commit enable
+     * @return type
+     */
+    public function commit()
+    {
+        $this->link->commit();
+    }
+
+    /**
+     * rollback sql
+     * @return type
+     */
+    public function rollback()
+    {
+        $this->link->rollback();
+    }
+
+    
 }

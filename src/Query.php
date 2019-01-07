@@ -428,4 +428,30 @@ class Query{
         return $this;
     }
 
+    /**
+     * 
+     */
+    public function startTrans()
+    {
+        $this->db->startTrans();
+    }
+
+    /**
+     * 
+     */
+    public function commit()
+    {
+        $this->db->commit();
+    }
+
+    /**
+     * 
+     */
+    public function rollback()
+    {
+        $this->db->rollback();
+    }
+
+
+
 }
