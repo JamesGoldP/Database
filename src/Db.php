@@ -6,7 +6,7 @@
  * Time: 1:42 PM
  */
 
-namespace Nezumi;
+namespace Nezimi;
 
 class Db{
 

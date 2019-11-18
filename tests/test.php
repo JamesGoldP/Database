@@ -2,7 +2,7 @@
 error_reporting(-1);
 include '../Loader.php';
 spl_autoload_register('Loader::_autoload');
-use Nezumi\PDOMySQL;
+use Nezimi\PDOMySQL;
 
 //load config
 $config = include '../configs/database.php';

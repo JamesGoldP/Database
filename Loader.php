@@ -9,7 +9,7 @@ class Loader
 			return true;
 		}
 		$file = __DIR__.'/'.str_replace('\\', DIRECTORY_SEPARATOR, $class).'.php';
-		$file = str_replace('/Nezumi/', '/src/', $file);
+		$file = str_replace('/Nezimi/', '/src/', $file);
 		if( file_exists($file) ){
 			include $file;
 			self::$classMap[$class] = $class;

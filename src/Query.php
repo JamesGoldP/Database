@@ -6,7 +6,7 @@
  * Time: 1:09 PM
  */
 
-namespace Nezumi;
+namespace Nezimi;
 
 use Exception;
 
@@ -15,7 +15,7 @@ class Query{
     /**
      * @var 
      */
-    protected $db;
+    protected $connection;
 
     /**
      * @var 
@@ -42,8 +42,7 @@ class Query{
 
     public function __construct()
     {
-        $this->db = $this->getDatabase();
-        
+        $this->connection = $this->getDatabase();
     }
 
     /**
@@ -79,11 +78,11 @@ class Query{
         } else {
             $dbConfig = $databaseConfig[array_rand($databaseConfig['slave'])];
         }
-        $buildClass = 'Nezumi\\builder\\'.ucfirst($dbConfig['type']);
+        $buildClass = 'Nezimi\\builder\\'.ucfirst($dbConfig['type']);
         $this->builder = new $buildClass;
         $db = Register::get($key);
         if( !$db ){
-            $connectorClass = 'Nezumi\\connector\\'.ucfirst($dbConfig['type']); 
+            $connectorClass = 'Nezimi\\connector\\'.ucfirst($dbConfig['type']); 
             $db = new $connectorClass;
             $db->open($dbConfig);
             Register::set($key, $db);
@@ -127,8 +126,8 @@ class Query{
         if( $fetchSql ){
             return $sql;
         }
-        $return = $this->db->query($sql);
-        return $return_insert_id ? $this->db->insertId() : $return;
+        $return = $this->connection->query($sql);
+        return $return_insert_id ? $this->connection->insertId() : $return;
     }
 
     /**
@@ -150,7 +149,7 @@ class Query{
         if( $fetchSql ){
             return $sql;
         }
-        $return = $this->db->query($sql);
+        $return = $this->connection->query($sql);
         return $return_affected_rows ? $this->affectedRows() : $return;
     }
 
@@ -167,7 +166,7 @@ class Query{
         if( $fetchSql ){
             return $sql;
         }
-        return $this->db->fetchAll($sql);
+        return $this->connection->fetchAll($sql);
     }
 
     /**
@@ -181,7 +180,7 @@ class Query{
         $this->beforeAction();
         $sql = $this->buildSelectSql();
         $this->afterAction();
-        return $this->db->fetchOne($sql);
+        return $this->connection->fetchOne($sql);
     }
 
     /**
@@ -233,7 +232,7 @@ class Query{
         if( $fetchSql ){
             return $sql;
         }
-        return $this->db->query($sql);
+        return $this->connection->query($sql);
     }
 
     /**
@@ -244,7 +243,7 @@ class Query{
      */
     public function getPrimary()
     {
-        $this->db->query('DESC '.$this->options['table']);
+        $this->connection->query('DESC '.$this->options['table']);
         while($row = $this->fetch()){
             if( $row['Key']=='PRI' ){
                 $primary = $row['Field'];
@@ -416,7 +415,7 @@ class Query{
         if( $fetchSql  ){
             return $sql;
         }
-        return $this->db->fetchColumn($sql);
+        return $this->connection->fetchColumn($sql);
     }
 
     /**
@@ -433,7 +432,7 @@ class Query{
      */
     public function startTrans()
     {
-        $this->db->startTrans();
+        $this->connection->startTrans();
     }
 
     /**
@@ -441,7 +440,7 @@ class Query{
      */
     public function commit()
     {
-        $this->db->commit();
+        $this->connection->commit();
     }
 
     /**
@@ -449,9 +448,12 @@ class Query{
      */
     public function rollback()
     {
-        $this->db->rollback();
+        $this->connection->rollback();
     }
 
-
+    public function query($sql)
+    {
+        return $this->connection->fetchOne($sql);
+    }
 
 }

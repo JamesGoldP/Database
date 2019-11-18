@@ -6,7 +6,7 @@
  * Time: 1:24 PM
  */
 
-namespace Nezumi;
+namespace Nezimi;
 
 class Model{
 

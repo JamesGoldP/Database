@@ -1,7 +1,7 @@
 <?php
-namespace Nezumi\builder;
+namespace Nezimi\builder;
 
-use Nezumi\Builder;
+use Nezimi\Builder;
 
 class Mysql extends Builder
 {

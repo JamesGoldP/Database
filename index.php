@@ -2,8 +2,8 @@
 include './Loader.php';
 spl_autoload_register('Loader::_autoload');
 require 'vendor/autoload.php';
-use Nezumi\Model;
-use Nezumi\Db;
+use Nezimi\Model;
+use Nezimi\Db;
 
 class admin extends Model{
 
@@ -41,5 +41,5 @@ $model = new admin();
 // $where = "name='jimmy'";
 // $result = $model->where($where)->update($update_array);
 
-$result = $model->fields(['name','money'])->limit(99)->order('id desc')->group('name')->having('name=\'jimmy2\'')->select();
+$result = $model->field(['name','money'])->limit(99)->order('id desc')->group('name')->having('name=\'jimmy2\'')->select();
 p($result);

@@ -1,5 +1,5 @@
 <?php
-namespace Nezumi;
+namespace Nezimi;
 
 use PDO;
 
@@ -33,22 +33,24 @@ class Connection
      * 
      */
 	public function connect(){
-		//检查pdo类是否可用
+		//check PDO
 		if(!class_exists('PDO')){
-            throw new Exception('Do not support PDO');
+            throw new Exception('Don\'t support PDO');
         }
-		//whether long connection
-        if( $this->config['pconnect'] ){
-            $this->config['params'][constant('PDO::ATTR_PERSISTENT')] = true;
-        }
+
 		//start connection
 		try{
-            $this->config['params'] = isset($this->config['params']) ? $this->config['params'] : array(); 
-			$this->link = new PDO('mysql:host='.$this->config['hostname'].';dbname='.$this->config['database'], $this->config['username'], $this->config['password'], $this->config['params']);
+            $this->parseDsn($this->config);
+            //whether long connection
+            if( $this->config['pconnect'] ){
+                $this->config['params'][constant('PDO::ATTR_PERSISTENT')] = true;
+            }
+            $dsn = $this->parseDsn($this->config);
+            $this->config['params'] = isset($this->config['params']) ? $this->config['params'] : []; 
+			$this->link = new PDO($dsn, $this->config['username'], $this->config['password'], $this->config['params']);
 		} catch (PDOException $e){
             throw new Exception($e->getMessage());
 		}
-        $this->link->exec('SET NAMES '.$this->config['charset']);
 	    return $this->link;		
 	}
 

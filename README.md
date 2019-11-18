@@ -11,7 +11,7 @@ composer require nezumi/mysql
 
 ## Usage
 ```php
-use Nezumi\MySQLi;
+use Nezimi\MySQLi;
 
 //load config
 $config = include './configs/database.php';

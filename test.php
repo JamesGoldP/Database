@@ -1,7 +1,7 @@
 <?php
 include './Loader.php';
 spl_autoload_register('Loader::_autoload');
-use Nezumi\MySQLi;
+use Nezimi\MySQLi;
 
 //load config
 $config = include './configs/database.php';

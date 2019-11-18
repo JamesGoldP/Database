@@ -6,7 +6,7 @@
  * Time: 2:07 AM
  */
 
-namespace Nezumi;
+namespace Nezimi;
 
 class Builder{
 
