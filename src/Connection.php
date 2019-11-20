@@ -12,46 +12,63 @@ class Connection
     private $statement;
 
     /**
-     * @var databse connection resource
+     * @var current databse connection resource
      */
-    public $link;
+    protected $link;
+
+    /**
+     * @var all database connection resource
+     */
+    protected $links;
 
     /**
      * @var databse connection configuration
      */
-    protected $config;
+    public $config;
 
-    public function open($config)
+    /**
+     * 
+     */
+    public $builder;
+
+    public function __construct($config)
     {
         $this->config = $config;
-        if( $this->config['autoconnect'] ){
-            $this->connect();
-        }
+        $this->builder = new $this->builderPosition;
     }
 
     /**
      * 
      */
-	public function connect(){
+	public function connect($linkNum = 0){
 		//check PDO
 		if(!class_exists('PDO')){
             throw new Exception('Don\'t support PDO');
         }
+        
+        if( !is_null($this->links[$linkNum]) ){
+            return $this->links[$linkNum];
+        }
 
 		//start connection
 		try{
-            $this->parseDsn($this->config);
+            $config = $this->config;
+            $this->parseDsn($config);
             //whether long connection
-            if( $this->config['pconnect'] ){
-                $this->config['params'][constant('PDO::ATTR_PERSISTENT')] = true;
+            if( $config['pconnect'] ){
+                $config['params'][constant('PDO::ATTR_PERSISTENT')] = true;
             }
-            $dsn = $this->parseDsn($this->config);
-            $this->config['params'] = isset($this->config['params']) ? $this->config['params'] : []; 
-			$this->link = new PDO($dsn, $this->config['username'], $this->config['password'], $this->config['params']);
+            $dsn = $this->parseDsn($config);
+            $config['params'] = isset($config['params']) ? $config['params'] : []; 
+            $this->link = $this->links[$linkNum] = new PDO($dsn, $config['username'], $config['password'], $config['params']);
+            return $this->link;	
 		} catch (PDOException $e){
-            throw new Exception($e->getMessage());
+            if( $config['autoconnect'] ){
+                return $this->connect($linkNum);
+            }
+            throw $e;
 		}
-	    return $this->link;		
+	    	
 	}
 
     /**
@@ -59,8 +76,9 @@ class Connection
      */
     public function query($sql)
     {
+        $this->connect();
         if( !$this->link ){
-            $this->connect();
+            return false;
         }
         //判断之前是否有结果集,如果有的话，释放结果集
         if( !empty($this->statement) ){
@@ -77,8 +95,9 @@ class Connection
      */
     public function execute($sql)
     {
+        $this->connect();
         if( !$this->link ){
-            $this->connect();
+            return false;
         }
         //判断之前是否有结果集,如果有的话，释放结果集
         if( !empty($this->statement) ){

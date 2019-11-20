@@ -1,7 +1,7 @@
 <?php
 class Loader
 {
-	static $classMap = array();  //to load classes
+	static $classMap = [];  //to load classes
 
 	static function _autoload($class)
 	{

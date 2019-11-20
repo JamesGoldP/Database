@@ -42,7 +42,7 @@ class Builder{
     }
 
     /**
-     * 
+     * build a select sql 
      */
     public function select($query)
     {
@@ -54,7 +54,7 @@ class Builder{
     }
 
     /**
-     * 
+     * build a update sql
      */
     public function update($query)
     {
@@ -72,7 +72,7 @@ class Builder{
     }
     
     /**
-     * 
+     * build a insert sql
      */
     public function insert($query, $replace)
     {
@@ -174,10 +174,10 @@ class Builder{
         if( $data == '' ){
             return $str;
         } else if( is_string($data) ){
-            $str = ' WHERE '.$data;
+            $str = 'WHERE '.$data;
         } else if( is_array($data) ){
             $i = 0;
-            $str .= ' WHERE ';
+            $str .= 'WHERE ';
             foreach ($data as $key => $values) {
                 $link = $i!=0 ? ' AND ' : '';
                 $str .= $link.$this->addBackquote($key).'='.$this->addQuotes($values);

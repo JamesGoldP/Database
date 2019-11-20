@@ -31,11 +31,6 @@ class Model{
     protected $updateTime;
 
     /**
-     * @var false or object
-     */
-    protected $db;
-
-    /**
      * @var string prefix
      */
     protected $prefix;
@@ -55,16 +50,23 @@ class Model{
      */
     protected $query; 
 
-    public function __construct()
+    /**
+     * @var boolean whether update is
+     */
+    protected $update = false;
+
+    /**
+     * the name of the model
+     */
+
+    public function __construct($data = [])
     {
-        $db_config = Db::getConfig()['master'];
-        $this->prefix = $db_config['tablepre'];
-        if( empty($this->table) ){
-            $this->table = $this->getModelName();
+        $this->data = $data;
+        $dbConfig = Db::getConfig()['master'];
+        if( empty($this->name) ){
+            $this->name = $this->getModelName();
         }
-        //update table of Quer options
-        $this->query = new Query();
-        $this->query->options['table'] = $this->table;
+        $this->initialize();
     }
 
     /**
@@ -72,18 +74,51 @@ class Model{
      */
     public function getModelName()
     {
-        $sub_arr = explode('\\', get_class($this));
-        $sub_class = end($sub_arr);
-        $table = $this->prefix.to_underscore($sub_class);
+        $arr = explode('\\', get_class($this));
+        $class = end($arr);
         return $table;
+    }
+    
+    public function newInstance($data)
+    {
+        return new static($data);
+    }
+
+    /**
+     * build a query
+     */
+    public function buildQuery()
+    {
+        //update table of Quer options
+        $query = new Query();
+        if( !empty($this->table) ){
+            $query->table($this->table);
+        } else {
+            $query->name($this->name);
+        }
+        return $query;
+    }
+
+    /**
+     * save data
+     */
+    public function save()
+    {
+
+    }
+
+    /**
+     * delete data
+     */
+    public function delete()
+    {
+
     }
 
     public function __call( string $name , array $arguments )
     {
-        return call_user_func_array([$this->query, $name], $arguments);
+        $query = $this->buildQuery();
+        $query->model($this);
+        return call_user_func_array([$query, $name], $arguments);
     }
-    
-
-
-
 }

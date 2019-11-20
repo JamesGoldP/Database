@@ -9,6 +9,7 @@
 namespace Nezimi;
 
 use Exception;
+use Nezimi\Db;
 
 class Query{
 
@@ -16,11 +17,6 @@ class Query{
      * @var 
      */
     protected $connection;
-
-    /**
-     * @var 
-     */
-    protected $builder;
 
     /**
      * query params
@@ -40,9 +36,25 @@ class Query{
         'fetch_sql' => false,
     ];
 
+    /**
+     * current model
+     */
+    private $model;
+
+    /**
+     * the name of the table with no prefix
+     */
+    protected $name;
+
+    /**
+     * @var string prefix
+     */
+    protected $prefix;
+
     public function __construct()
     {
-        $this->connection = $this->getDatabase();
+        $this->connection = $this->instance();
+        $this->prefix = $this->connection->config['prefix'];
     }
 
     /**
@@ -55,6 +67,27 @@ class Query{
     }
 
     /**
+     * table name with no prefix
+     */
+    public function name($table)
+    {
+        $this->name = $table;
+        return $this;
+    }
+
+    /**
+     * gets table
+     */
+    public function getTable($table = '')
+    {
+        if( is_null($table) && isset($this->options['table']) ){
+            return $this->options['table'];
+        }
+        $table = $table ?: $this->name;
+        return $this->prefix. Db::parseName($table);    
+    }
+
+    /**
      * 
      */
     public function alias($name)
@@ -63,10 +96,18 @@ class Query{
         return $this;
     }
 
+    /**
+     * 
+     */
+    public function model(Model $model)
+    {
+        $this->model = $model;
+    }
+
     /*
      * @return false or object
      */
-    public function getDatabase( $id = 'master' )
+    public function instance( $id = 'master' )
     {
         $key = 'database_'.$id;
         $databaseConfig = Db::getConfig();
@@ -78,13 +119,10 @@ class Query{
         } else {
             $dbConfig = $databaseConfig[array_rand($databaseConfig['slave'])];
         }
-        $buildClass = 'Nezimi\\builder\\'.ucfirst($dbConfig['type']);
-        $this->builder = new $buildClass;
         $db = Register::get($key);
         if( !$db ){
             $connectorClass = 'Nezimi\\connector\\'.ucfirst($dbConfig['type']); 
-            $db = new $connectorClass;
-            $db->open($dbConfig);
+            $db = new $connectorClass($dbConfig);
             Register::set($key, $db);
         }
         return $db;
@@ -94,12 +132,12 @@ class Query{
     {
         if( in_array($name, ['field', 'table', 'where', 'group', 'having', 'order', 'limit']) ){
             $method = 'parse'.ucwords($name);
-            $result = call_user_func_array([$this->builder, $method], $arguments);
+            $result = call_user_func_array([$this->connection->builder, $method], $arguments);
             $this->options[$name] = $result;
             return $this;
         } else if( 'join' == $name ) {
             $method = 'parse'.ucwords($name);
-            $result = call_user_func_array([$this->builder, $method], $arguments);
+            $result = call_user_func_array([$this->connection->builder, $method], $arguments);
             $this->options[$name] .= $result;
             return $this; 
         }
@@ -120,7 +158,7 @@ class Query{
     {
         $this->options['data'] = $data; 
         $this->beforeAction();
-        $sql = $this->builder->insert($this, $replace);
+        $sql = $this->connection->builder->insert($this, $replace);
         $fetchSql = $this->getOptions('fetch_sql');
         $this->afterAction();
         if( $fetchSql ){
@@ -143,7 +181,7 @@ class Query{
         }
         $this->setOption('data', $data); 
         $this->beforeAction();
-        $sql = $this->builder->update($this);
+        $sql = $this->connection->builder->update($this);
         $fetchSql = $this->getOptions('fetch_sql');
         $this->afterAction();
         if( $fetchSql ){
@@ -179,8 +217,18 @@ class Query{
     {
         $this->beforeAction();
         $sql = $this->buildSelectSql();
+        $fetchSql = $this->getOptions('fetch_sql');
         $this->afterAction();
-        return $this->connection->fetchOne($sql);
+        if( $fetchSql ){
+            return $sql;
+        }
+        $result = $this->connection->fetchOne($sql);
+
+        //result
+        if( !empty($this->model) ){
+            return $this->resultToModel($result);
+        } 
+        return $result;
     }
 
     /**
@@ -191,7 +239,7 @@ class Query{
      */
     public function buildSelectSql($sub = false)
     {
-        $sql = $this->builder->select($this);
+        $sql = $this->connection->builder->select($this);
         return $sub ? '('.$sql.')' : $sql;
     }
 
@@ -226,7 +274,7 @@ class Query{
         }
         // $sql = 'DELETE FROM  '.$this->options['table'].$this->options['where'];
         $this->beforeAction();
-        $sql = $this->builder->delete($this);
+        $sql = $this->connection->builder->delete($this);
         $fetchSql = $this->getOptions('fetch_sql');
         $this->afterAction();
         if( $fetchSql ){
@@ -255,12 +303,12 @@ class Query{
 
     protected function beforeAction()
     {
-
+        $this->parseOptions();
     }
 
     protected function afterAction()
     {
-        $this->resetOptions();
+        
     }
 
     /**
@@ -294,25 +342,11 @@ class Query{
     /**
      * 
      */
-    public function resetOptions()
+    public function parseOptions()
     {
-        if( !empty($this->options['table']) ){
-            $table = $this->options['table'];
-        }
-        $this->options = [
-            'fields' => '*',
-            'table' => '',
-            'join' => '',
-            'where' => '',
-            'group' => '',
-            'having' => '',
-            'order' => '',
-            'limit' => '',
-            'data' => '',
-            'fetch_sql' => false,
-        ];
-        if( !empty($table) ){
-            $this->setOption('table', $table);
+        $options = $this->options;
+        if( empty($options['table']) ){
+            $this->setOption('table', $this->getTable());
         }
     }
 
@@ -354,7 +388,7 @@ class Query{
             $fetchSql = $this->getOptions('fetch_sql');
             $table = $this->buildSelectSql(true);
             $this->table($table);
-            $this->resetOptions();
+            $this->parseOptions();
             return $this->aggregate('COUNT', '*', true, $fetchSql);  
         }
         return $this->aggregate('COUNT', $field); 
@@ -402,7 +436,7 @@ class Query{
         }
         $fielValue = $name.'('.$field.') AS tmp_'.strtolower($name);
         $this->setOption('field', $fielValue);
-        $this->setOption('limit', $this->builder->parseLimit(1));
+        $this->setOption('limit', $this->connection->builder->parseLimit(1));
         if( !$fetchSql ){
             $fetchSql = $this->getOptions('fetch_sql'); 
         }
@@ -455,5 +489,11 @@ class Query{
     {
         return $this->connection->fetchOne($sql);
     }
+
+    public function resultToModel($result)
+    {
+        return $this->model->newInstance($result); 
+    }
+
 
 }
