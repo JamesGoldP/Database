@@ -7,12 +7,7 @@ use Nezimi\Db;
 
 class admin extends Model{
 
-    protected $table = 'cms_account';
-
-    public function __constuct()
-    {
-        // $this->table = 'cms_account';
-    }
+    protected $table = 'cms_news';
 
     public function test()
     {
@@ -20,8 +15,8 @@ class admin extends Model{
     }
 
 }
-$config = require_once './configs/database.php';
-Db::setConfig($config);
+$config = require_once './config.php';
+
 $model = new admin();
 
 // D
@@ -39,7 +34,26 @@ $model = new admin();
 //     'money' => 2000,
 // );
 // $where = "name='jimmy'";
-// $result = $model->where($where)->update($update_array);
+// $result = $model->where($where)->fetchSql()->update($update_array);
+// p($result);
 
-$result = $model->field(['name','money'])->limit(99)->order('id desc')->group('name')->having('name=\'jimmy2\'')->select();
+// $result = $model->field(['name','money'])->limit(99)->order('id desc')->group('name')->having('name=\'jimmy2\'')->select();
+
+
+// $result = $model->where('id>7')->find();
+// $result = $model->where('id', '>', 7)->find();
+// $result = $model->where('title', 'like', '%what%')->find();
+// $result = $model->where(function($query){
+//     $query->where('id', '>', 1);
+// })->find();
+// $result = $model->where([
+//     'title'	=>	'what is html2',
+//     'id'=>	172,
+// ])->find();
+// $result = $model->where('id', 'between', '6,7')->fetchSql(false)->find();
+// $result = $model->where('thumb&title', 'like', '%what%')->find();
+// $result = $model->where('id', '<', 7)->whereOr('id', '>', 1)->find();
+
+$result = $model->where('id', ['>', 0], ['<>', 10], 'and')->fetchSql()->find();
+p($result->getLastSql());
 p($result);

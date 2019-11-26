@@ -9,8 +9,7 @@ spl_autoload_register('Loader::_autoload');
 require 'vendor/autoload.php';
 use Nezimi\Db;
 
-$config = require_once './configs/database.php';
-Db::setConfig($config);
+$config = require_once './config.php';
 
 // //D
 // Db::table('cms_account')->where(['name'=>'jimmy2'])->delete();
@@ -27,7 +26,8 @@ Db::setConfig($config);
 //     'money' => 2000,
 // );
 // $where = "name='jimmy'";
-// Db::table('cms_account')->where($where)->update($update_array);
+// $result = Db::table('cms_account')->fetchSql()->where($where)->update($update_array);
+// p($result);
 
 // $result = Db::table('cms_account')->fields(['name','money'])->limit(99)->order('id desc')->group('name')->having('name=\'jimmy2\'')->select();
 // p($result);
@@ -37,5 +37,5 @@ Db::setConfig($config);
 // p($result);
 
 // $result = Db::table('cms_news')->find();
-$result = Db::query('select * from cms_news');
+$result = Db::name('news')->where('id', '<', 7)->whereOr('id', '>', 1)->fetchSql(false)->find();
 p($result);

@@ -1,15 +1,20 @@
 <?php
-return [
+namespace Nezimi;
+
+$config = [
     'master' => [
+        'type' => 'mysql',
+        'dsn' => '',
         'hostname' => 'localhost',
-        'database' => 'temp',
+        'database' => 'mycms',
         'username' => 'root',
         'password' => 'pyl',
-        'tablepre' => 'cms_',
+        'hostport' => '',
+        'prefix' => 'cms_',
         'charset' => 'utf8',
-        'type' => 'mysql',
-        'debug' => true,
         'pconnect' => 0,
         'autoconnect' => 0
-    ]
+    ],
 ];
+
+Db::setConfig($config);
