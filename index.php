@@ -54,6 +54,6 @@ $model = new admin();
 // $result = $model->where('thumb&title', 'like', '%what%')->find();
 // $result = $model->where('id', '<', 7)->whereOr('id', '>', 1)->find();
 
-$result = $model->where('id', ['>', 0], ['<>', 10], 'and')->fetchSql()->find();
+$result = $model->where('id', ['>', 1], ['<', 7], 'and')->find();
 p($result->getLastSql());
 p($result);

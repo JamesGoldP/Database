@@ -7,6 +7,7 @@
  */
 
 namespace Nezimi;
+use Nezimi\db\Query;
 
 class Model{
 
@@ -62,11 +63,10 @@ class Model{
     public function __construct($data = [])
     {
         $this->data = $data;
-        $dbConfig = Db::getConfig()['master'];
+        $config = Db::getConfig()['master'];
         if( empty($this->name) ){
             $this->name = $this->getModelName();
         }
-        $this->initialize();
     }
 
     /**
@@ -76,7 +76,7 @@ class Model{
     {
         $arr = explode('\\', get_class($this));
         $class = end($arr);
-        return $table;
+        return $class;
     }
     
     public function newInstance($data)

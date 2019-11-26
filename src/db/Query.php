@@ -6,10 +6,12 @@
  * Time: 1:09 PM
  */
 
-namespace Nezimi;
+namespace Nezimi\db;
 
 use Exception;
 use Nezimi\Db;
+use Nezimi\Model;
+use Nezimi\db\Connection;
 
 class Query{
 
@@ -27,7 +29,7 @@ class Query{
         'field' => '*',
         'table' => '',
         'join' => '',
-        'where' => '',
+        'where' => [],
         'group' => '',
         'having' => '',
         'order' => '',
@@ -51,10 +53,20 @@ class Query{
      */
     protected $prefix;
 
+    /**
+     * @var array
+     */
+    public $bind = [];
+
     public function __construct()
     {
-        $this->connection = $this->instance();
+        $this->connection = Connection::instance();
         $this->prefix = $this->connection->config['prefix'];
+    }
+
+    public function newInstance()
+    {
+        return new static();
     }
 
     /**
@@ -102,45 +114,6 @@ class Query{
     public function model(Model $model)
     {
         $this->model = $model;
-    }
-
-    /*
-     * @return false or object
-     */
-    public function instance( $id = 'master' )
-    {
-        $key = 'database_'.$id;
-        $databaseConfig = Db::getConfig();
-        if( empty($databaseConfig) ){
-            throw new Exception('No config');
-        }
-        if( $id == 'master' ){
-            $dbConfig = $databaseConfig['master'];
-        } else {
-            $dbConfig = $databaseConfig[array_rand($databaseConfig['slave'])];
-        }
-        $db = Register::get($key);
-        if( !$db ){
-            $connectorClass = 'Nezimi\\connector\\'.ucfirst($dbConfig['type']); 
-            $db = new $connectorClass($dbConfig);
-            Register::set($key, $db);
-        }
-        return $db;
-    }
-
-    public function __call($name ,$arguments)
-    {
-        if( in_array($name, ['field', 'table', 'where', 'group', 'having', 'order', 'limit']) ){
-            $method = 'parse'.ucwords($name);
-            $result = call_user_func_array([$this->connection->builder, $method], $arguments);
-            $this->options[$name] = $result;
-            return $this;
-        } else if( 'join' == $name ) {
-            $method = 'parse'.ucwords($name);
-            $result = call_user_func_array([$this->connection->builder, $method], $arguments);
-            $this->options[$name] .= $result;
-            return $this; 
-        }
     }
 
     /**
@@ -198,13 +171,18 @@ class Query{
     public function select()
     {
         $this->beforeAction();
-        $sql = $this->buildSelectSql();
-        $fetchSql = $this->getOptions('fetch_sql');
+        $result = $this->connection->select($this);
         $this->afterAction();
-        if( $fetchSql ){
-            return $sql;
+
+        if( $this->options['fetch_sql'] ){
+            return $result;
         }
-        return $this->connection->fetchAll($sql);
+
+        //result
+        if( !empty($this->model) ){
+            return $this->resultToModel($result);
+        } 
+        return $result;
     }
 
     /**
@@ -216,13 +194,12 @@ class Query{
     public function find()
     {
         $this->beforeAction();
-        $sql = $this->buildSelectSql();
-        $fetchSql = $this->getOptions('fetch_sql');
+        $result = $this->connection->find($this);
         $this->afterAction();
-        if( $fetchSql ){
-            return $sql;
+
+        if( $this->options['fetch_sql'] ){
+            return $result;
         }
-        $result = $this->connection->fetchOne($sql);
 
         //result
         if( !empty($this->model) ){
@@ -256,7 +233,7 @@ class Query{
     {
         $sql = 'select %s from %s where '.$this->getPrimary($table).'=%d';
         $sprintf_sql = sprintf($sql, $this->parsefield($field), $table, $primary);
-        return  $this->fetchOne($sprintf_sql);
+        return  $this->find($this, $sprintf_sql);
     }
 
     /**
@@ -449,7 +426,7 @@ class Query{
         if( $fetchSql  ){
             return $sql;
         }
-        return $this->connection->fetchColumn($sql);
+        return $this->connection->fetchColumn($this, $sql);
     }
 
     /**
@@ -487,7 +464,7 @@ class Query{
 
     public function query($sql)
     {
-        return $this->connection->fetchOne($sql);
+        return $this->connection->find($this, $sql);
     }
 
     public function resultToModel($result)
@@ -495,5 +472,98 @@ class Query{
         return $this->model->newInstance($result); 
     }
 
+    /**
+     * 
+     */
+    public function where($field, $operator = NULL, $condition = NULL, $param = [])
+    {
+        $param = func_get_args();
+        $this->parseWhereExp('AND', $field, $operator, $condition, $param);
+        return $this;
+    }
 
+    /**
+     * 
+     */
+    public function whereOr($field, $operator = NULL, $condition = NULL)
+    {
+        $this->parseWhereExp('OR', $field, $operator, $condition);
+        return $this;
+    }
+
+    protected function parseWhereExp($logic, $field, $operator, $condition, $param = [])
+    {
+        $logic = strtoupper($logic);
+
+        if( is_array($field) ){
+            return $this->parseArrayWhereItems($field, $logic);
+        } else if($field instanceof \Closure){
+            $where = $field;
+            $field = '';
+        } else if( is_string($field) ){
+            if( preg_match('/[\<\>=]/', $field) ){
+                return $this->whereRaw($field, $operator, $logic);
+            }
+            $where = $this->parseWhereItem($field, $operator, $condition, $param);
+        }
+
+        if( isset($this->options['where'][$logic][$field]) ){
+            $this->options['where'][$logic][] = $where;
+        } else {
+            $this->options['where'][$logic][$field] = $where;
+        }
+    }
+
+    public function whereRaw($field, $operator, $logic)
+    {
+        $this->options['where'][$logic][] = $this->raw($field);   
+    }
+
+    public function raw($value)
+    {
+        return new Expression($value);
+    }
+
+    protected function parseWhereItem($field, $operator, $condition, $param)
+    {
+        if( is_array($operator) ){
+            $where = $param;
+        } else if( is_null($condition) ){
+            $where = [$field, '=', $operator];
+        } else {
+            $where = [$field, $operator, $condition]; 
+        }
+        return $where;
+    }
+
+    protected function parseArrayWhereItems($field, $logic)
+    {
+        if( key($field)!==0 ){
+            foreach($field as $key=>$val){
+                $where[] = [$key, is_array($val) ? 'IN' : '=', $val];
+            } 
+        } else {
+            $where = $field;
+        }
+        $whereItem = &$this->options['where']; 
+        $whereItem[$logic] = isset($whereItem[$logic]) ? array_merge($whereItem[$logic], $where) : $where;
+    }
+
+    public function bind($value, $type, $name = NULL)
+    {
+        $name = $name ?: ':Bind_' . (count($this->bind)+1) . '_';
+        $this->bind[$name] = [$value, $type];
+        return $name;
+    }
+
+    public function isBind($key)
+    {
+        return isset($this->bind[$key]);
+    }
+
+    public function getLastSql()
+    {
+        return $this->connection->getLastSql();
+    }
+   
 }

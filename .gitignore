@@ -11,4 +11,6 @@ composer-setup.php
 .php_cs.cache
 
 /.idea
-/configs/database.php
+database.php
+
+/examples
