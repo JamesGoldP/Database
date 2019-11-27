@@ -34,7 +34,7 @@ class Query{
         'having' => '',
         'order' => '',
         'limit' => '',
-        'data' => '',
+        'data' => [],
         'fetch_sql' => false,
     ];
 
@@ -129,16 +129,15 @@ class Query{
      */
     public function insert( $data, $return_insert_id = false, $replace = false )
     {
-        $this->options['data'] = $data; 
+        $this->setOption('data', $data);
         $this->beforeAction();
-        $sql = $this->connection->builder->insert($this, $replace);
-        $fetchSql = $this->getOptions('fetch_sql');
+        $result = $this->connection->insert($this, $replace);
         $this->afterAction();
-        if( $fetchSql ){
-            return $sql;
+
+        if( $this->options['fetch_sql'] ){
+            return $result;
         }
-        $return = $this->connection->query($sql);
-        return $return_insert_id ? $this->connection->insertId() : $return;
+        return $return_insert_id ? $this->connection->insertId() : $result;
     }
 
     /**
@@ -147,21 +146,17 @@ class Query{
      *  @return int number of affected rows in previous MySQL operation
      *
      */
-    public function update($data, $return_affected_rows = false)
+    public function update($data = [], $return_affected_rows = false)
     {
-        if (empty($this->options['where'])) {
-            throw new Exception('The condition is required.');
-        }
-        $this->setOption('data', $data); 
+        $this->setOption('data', $data);
         $this->beforeAction();
-        $sql = $this->connection->builder->update($this);
-        $fetchSql = $this->getOptions('fetch_sql');
+        $result = $this->connection->update($this);
         $this->afterAction();
-        if( $fetchSql ){
-            return $sql;
+
+        if( $this->options['fetch_sql'] ){
+            return $result;
         }
-        $return = $this->connection->query($sql);
-        return $return_affected_rows ? $this->affectedRows() : $return;
+        return $return_affected_rows ? $this->affectedRows() : $result;
     }
 
     /**
@@ -209,6 +204,27 @@ class Query{
     }
 
     /**
+     *  Deletes Data
+     *
+     *  @param  string $$talbe
+     *
+     *  @return int
+     *
+     */
+    public function delete()
+    {
+        $this->beforeAction();
+        $result = $this->connection->delete($this);
+        $this->afterAction();
+
+        if( $this->options['fetch_sql'] ){
+            return $result;
+        }
+
+        return $result;
+    }
+
+    /**
      * gets select sql
      *
      * @return string
@@ -234,30 +250,6 @@ class Query{
         $sql = 'select %s from %s where '.$this->getPrimary($table).'=%d';
         $sprintf_sql = sprintf($sql, $this->parsefield($field), $table, $primary);
         return  $this->find($this, $sprintf_sql);
-    }
-
-    /**
-     *  Deletes Data
-     *
-     *  @param  string $$talbe
-     *
-     *  @return int
-     *
-     */
-    public function delete()
-    {
-        if( empty($this->options['where']) ){
-            throw new Exception('The condition is required.');
-        }
-        // $sql = 'DELETE FROM  '.$this->options['table'].$this->options['where'];
-        $this->beforeAction();
-        $sql = $this->connection->builder->delete($this);
-        $fetchSql = $this->getOptions('fetch_sql');
-        $this->afterAction();
-        if( $fetchSql ){
-            return $sql;
-        }
-        return $this->connection->query($sql);
     }
 
     /**

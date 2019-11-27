@@ -118,6 +118,7 @@ abstract class Connection
 	}
 
     /**
+     * R
      * @return 
      * @throw PDOException
      */
@@ -138,18 +139,11 @@ abstract class Connection
         try{
             $this->statement = $this->link->prepare($sql);
             $this->bindParam($bind);
-            $result = $this->statement->execute();
+            return $result = $this->statement->execute();
         } catch (\PDOException $e) {
             throw $e;
         }   
        
-    }
-
-    protected function bindParam($data)
-    {
-        foreach($data as $key=>$val){
-            $this->statement->bindValue($key, $val[0], $val[1]);
-        }
     }
 
     /**
@@ -168,6 +162,13 @@ abstract class Connection
             $this->free();
         }
         return $this->link->exec($sql);
+    }
+
+    protected function bindParam($data)
+    {
+        foreach($data as $key=>$val){
+            $this->statement->bindValue($key, $val[0], $val[1]);
+        }
     }
 
     /**
@@ -208,6 +209,41 @@ abstract class Connection
 
         $this->query($sql, $query->bind);
         $result = $this->fetch($type);
+		return $result;	
+    }
+
+    public function update(Query $query)
+    {
+        $options = $query->getOptions();
+        $sql = $this->builder->update($query);
+
+        if( $options['fetch_sql'] ){
+            return $this->getRealSql($sql, $query->bind);
+        }
+        $result = $this->query($sql, $query->bind);
+		return $result;	
+    }
+
+    public function insert(Query $query, $replace)
+    {
+        $options = $query->getOptions();
+        $sql = $this->builder->insert($query, $replace);
+        if( $options['fetch_sql'] ){
+            return $this->getRealSql($sql, $query->bind);
+        }
+        $result = $this->query($sql, $query->bind);
+		return $result;	
+    }
+
+    public function delete(Query $query)
+    {
+        $options = $query->getOptions();
+        $sql = $this->builder->delete($query);
+
+        if( $options['fetch_sql'] ){
+            return $this->getRealSql($sql, $query->bind);
+        }
+        $result = $this->query($sql, $query->bind);
 		return $result;	
     }
 
@@ -257,8 +293,8 @@ abstract class Connection
             }
             
             $sql = str_replace(
-                [$key.' '],
-                [$value.' '],
+                [$key],
+                [$value],
                 $sql
             );
         }

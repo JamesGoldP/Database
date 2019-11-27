@@ -42,27 +42,7 @@ class Builder{
         'NOTNULL' => 'NOT NULL',
         'NOTBETWEEN TIME' => 'NOT BETWEEN TIME', 
     ];
-
-    /**
-     * 
-     */
-    protected $selectSql = 'SELECT %FIELD% FROM %TABLE%%JOIN%%WHERE%%GROUP%%HAVING%%ORDER%%LIMIT%'; 
-
-    /**
-     * 
-     */
-    protected $deleteSql = 'DELETE FROM %TABLE% %WHERE%';  
-
-    /**
-     * 
-     */
-    protected $updateSql = 'UPDATE %TABLE% SET %DATA% %WHERE%';  
-    
-    /**
-     * 
-     */
-    protected $insertSql = '%INSERT% INTO %TABLE%(%FIELD%) values(%VALUES%)';  
-  
+   
     public function __construct(Connection $connection)
     {
         $this->connection = $connection;
@@ -73,9 +53,12 @@ class Builder{
      */
     public function delete($query)
     {
-        $options = $query->options;
+        $options = $query->getOptions();
         $search = ['%TABLE%', '%WHERE%'];
-        $replace = [$options['table'], $options['where']];
+        $replace = [
+            $this->parseTable($options['table']), 
+            $this->parseWhere($query, $options['where']), 
+        ];
         return str_replace($search, $replace, $this->deleteSql);
     }
 
@@ -84,16 +67,16 @@ class Builder{
      */
     public function select($query)
     {
-        $options = $query->options;
+        $options = $query->getOptions();
         $search = ['%FIELD%', '%TABLE%', '%JOIN%', '%WHERE%', '%GROUP%', '%HAVING%', '%ORDER%', '%LIMIT%'];
         $replace = [
-            $options['field'], 
-            $options['table'], 
-            $options['join'], 
+            $this->parseField($options['field']), 
+            $this->parseTable($options['table']), 
+            $this->parseJoin($options['join']), 
             $this->parseWhere($query, $options['where']), 
-            $options['group'], 
-            $options['having'], 
-            $options['order'], 
+            $this->parseGroup($options['group']), 
+            $this->parseHaving($options['having']), 
+            $this->parseOrder($options['order']), 
             $this->parseLimit($options['limit']),
         ];
         $sql = str_replace($search, $replace, $this->selectSql);
@@ -103,41 +86,67 @@ class Builder{
     /**
      * build a update sql
      */
-    public function update($query)
+    public function update(Query $query)
     {
-        $options = $query->options;
-        $data_sql = '';
+        $options = $query->getOptions();
+        $dataSql = '';
         $data = $options['data'];
         foreach ($data as $key => $values) {
-            $data_sql .= $this->addSymbol($key, '`') . '=' . $this->addSymbol($values).',';
+            $dataSql .= $this->addSymbol($key, '`') . '=' . $this->addSymbol($values).',';
         }
-        $data_sql = substr($data_sql, 0, -1);
-        $sql = 'UPDATE '.$options['table'].' SET '.$data_sql.$options['where'];
+        $dataSql = substr($dataSql, 0, -1);
         $search = ['%TABLE%', '%DATA%', '%WHERE%'];
-        $replace = [$options['table'], $data_sql, $options['where']];
+        $replace = [
+            $this->parseTable($options['table']), 
+            $dataSql, 
+            $this->parseWhere($query, $options['where']),
+        ];
         return str_replace($search, $replace, $this->updateSql);
     }
     
     /**
      * build a insert sql
      */
-    public function insert($query, $replace)
+    public function insert(Query $query, $replace)
     {
-        $options = $query->options;
+        $options = $query->getOptions();
         $data = $options['data'];
+
+        if( empty($data) ){
+            return false;
+        }
+        $data = $this->parseData($query, $data);
+
         $field = array_keys($data);
         $values = array_values($data);
-
-        array_walk($field, [$this, 'addSymbol'], '`');
-        array_walk($values, [$this, 'addSymbol']);
 
         $field_str = implode(',', $field);
         $values_str = implode(',', $values);
         $method = $replace ? 'REPLACE' : 'INSERT';
         // $insert_sql = $method.' INTO '.$this->options['table'].'('.$field_str.')'.' values('.$values_str.')';
         $search = ['%INSERT%', '%TABLE%', '%FIELD%', '%VALUES%'];
-        $replace = [$method, $options['table'], $field_str, $values_str];
+        $replace = [
+            $method, 
+            $this->parseTable($options['table']), 
+            $field_str, 
+            $values_str
+        ];
         return str_replace($search, $replace, $this->insertSql);
+    }
+
+    public function parseData(Query $query, $data)
+    {
+        $result = [];
+
+        $binds = $this->connection->getTableInfo($query->getOptions('table'), 'bind');
+
+        foreach($data as $key=>$value){
+            $k = $this->parseKey($query, $key);
+            $bindType = $binds[$k] ?? PDO::PARAM_STR;
+            $val = $query->bind($value, $bindType);
+            $result[$k] = $val; 
+        }
+        return $result;
     }
 
     /**
@@ -207,7 +216,6 @@ class Builder{
      */
     public function buildWhere(Query $query, $where)
     {
-        p($where);
         if( empty($where) ){
             $data = [];
         }
