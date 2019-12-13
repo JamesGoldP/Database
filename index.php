@@ -56,13 +56,20 @@ $model = new admin();
  * C
  */
 
-// $insertArray = array(
-//     'title' => 'linux4',
-//     'thumb' => '/images4/',
-// );
-// $result = $model->insert($insertArray);
+$insertArray = array(
+    ['title' => 'linux7','thumb' => '/images7/'],
+    ['title' => 'linux8','thumb' => '/images8/'],
+);
+
+foreach($insertArray as $key=>$value){
+    $result = $model->insert($value);
+    p($model->getLastSql());
+    p($result);
+}
+
 
 // D
-$result = $model->where('id=175')->delete();
-p($model->getLastSql());
-p($result);
+// $result = $model->where('id=175')->delete();
+
+
+

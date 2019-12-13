@@ -1,11 +1,11 @@
-Database connection classes for mysql.(mysql,mysqli,pdo)
+ORM Framework
 
 
 ## Installation
 
-Use [composer](http://getcomposer.org) to install nezumi/mysql in your project:
+Use [composer](http://getcomposer.org) to install nezimi/my-orm in your project:
 ```
-composer require nezumi/mysql
+composer require nezimi/my-orm
 ```
 
 
@@ -48,19 +48,19 @@ $mysql->close();
 
 ## sample database.php 
 ```php
-return array (
-	'master' => array (
-		'hostname' => 'localhost',
-		'database' => 'mycms',
-		'username' => 'root',
-		'password' => 'root',
-		'tablepre' => 'cms_',
-		'charset' => 'utf8',
-		'type' => 'mysql',
-		'debug' => true,
-		'pconnect' => 0,
-		'autoconnect' => 0
-	),
-);
-
+return [
+    'master' => [
+        'type' => 'mysql',
+        'dsn' => '',
+        'hostname' => 'localhost',
+        'database' => 'mycms',
+        'username' => 'root',
+        'password' => 'pyl',
+        'hostport' => '',
+        'prefix' => 'cms_',
+        'charset' => 'utf8',
+        'pconnect' => 0,
+        'autoconnect' => 0
+    ],
+];
 ```

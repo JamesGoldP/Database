@@ -11,6 +11,8 @@ use Nezimi\db\Query;
 
 class Model{
 
+    use model\concern\Attribute;
+
     /**
      * @var
      */
@@ -54,7 +56,7 @@ class Model{
     /**
      * @var boolean whether update is
      */
-    protected $update = false;
+    protected $isUpdate = false;
 
     /**
      * the name of the model
@@ -102,17 +104,25 @@ class Model{
     /**
      * save data
      */
-    public function save()
+    public function save($data = [])
     {
-
+        return $this->insert($data);   
     }
 
     /**
-     * delete data
+     * save all of data
      */
-    public function delete()
+    public function saveAll($data = [])
     {
+        foreach($data as $key=>$value){
+            $this->insert($value);
+        }
+    }
 
+    public function isUpdate($update = true)
+    {
+        $this->isUpdate = $update;
+        return $this;
     }
 
     public function __call( string $name , array $arguments )
