@@ -125,6 +125,11 @@ class Model{
         return $this;
     }
 
+    public function toArray()
+    {
+        return $this->data;
+    }
+
     public function __call( string $name , array $arguments )
     {
         $query = $this->buildQuery();

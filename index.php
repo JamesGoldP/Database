@@ -16,6 +16,7 @@ class admin extends Model{
 
 }
 $config = require_once './config.php';
+require_once './src/functions.php';
 
 $model = new admin();
 
@@ -39,7 +40,7 @@ $model = new admin();
 // $result = $model->where('id', 'between', '6,7')->fetchSql(false)->find();
 // $result = $model->where('thumb&title', 'like', '%what%')->find();
 // $result = $model->where('id', '<', 7)->whereOr('id', '>', 1)->find();
-// $result = $model->where('id', ['>', 1], ['<', 7], 'and')->find();
+$result = collection($model->where('id', ['>=', 1], ['<=', 7], 'and')->select())->toArray();
 
 
 /**
@@ -56,20 +57,20 @@ $model = new admin();
  * C
  */
 
-$insertArray = array(
-    ['title' => 'linux7','thumb' => '/images7/'],
-    ['title' => 'linux8','thumb' => '/images8/'],
-);
+// $insertArray = array(
+//     ['title' => 'linux7','thumb' => '/images7/'],
+//     ['title' => 'linux8','thumb' => '/images8/'],
+// );
 
-foreach($insertArray as $key=>$value){
-    $result = $model->insert($value);
-    p($model->getLastSql());
-    p($result);
-}
+// foreach($insertArray as $key=>$value){
+//     $result = $model->insert($value);
+//     p($model->getLastSql());
+//     p($result);
+// }
 
 
 // D
 // $result = $model->where('id=175')->delete();
-
+p($result);
 
 

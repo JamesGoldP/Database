@@ -166,18 +166,29 @@ class Query{
     public function select()
     {
         $this->beforeAction();
-        $result = $this->connection->select($this);
+        $resultSet = $this->connection->select($this);
         $this->afterAction();
 
         if( $this->options['fetch_sql'] ){
-            return $result;
+            return $resultSet;
         }
 
         //result
         if( !empty($this->model) ){
-            return $this->resultToModel($result);
-        } 
-        return $result;
+            return $this->resultSetToModelCollection($resultSet);
+        }
+        return $resultSet;
+    }
+
+    /**
+     * 转换结果集
+     */
+    protected function resultSetToModelCollection(array $resultSet)
+    {
+        foreach($resultSet as &$value){
+            $this->resultToModel($value);
+        }
+        return $resultSet;
     }
 
     /**
@@ -459,9 +470,9 @@ class Query{
         return $this->connection->find($this, $sql);
     }
 
-    public function resultToModel($result)
+    public function resultToModel(&$result)
     {
-        return $this->model->newInstance($result); 
+        return $result = $this->model->newInstance($result); 
     }
 
     /**

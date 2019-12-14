@@ -4,24 +4,25 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e5e6a93c44367a1e9c98ad5aa865ee2b",
-    "packages": [
+    "content-hash": "684d9d596af5278538142888aefb3f79",
+    "packages": [],
+    "packages-dev": [
         {
-            "name": "nezumi/myfunctions",
+            "name": "nezimi/my-functions",
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "https://github.com/PengYilong/MyFunctions.git",
-                "reference": "1b3043fc95581e956160f3fdfc29114141b4dde2"
+                "url": "https://github.com/PengYilong/my-functions.git",
+                "reference": "d23eaece5cfc5561b28ae205a5eb7eb1db8183fc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PengYilong/MyFunctions/zipball/1b3043fc95581e956160f3fdfc29114141b4dde2",
-                "reference": "1b3043fc95581e956160f3fdfc29114141b4dde2",
+                "url": "https://api.github.com/repos/PengYilong/my-functions/zipball/d23eaece5cfc5561b28ae205a5eb7eb1db8183fc",
+                "reference": "d23eaece5cfc5561b28ae205a5eb7eb1db8183fc",
                 "shasum": ""
             },
             "require": {
-                "php": ">=5.4"
+                "php": ">=5.6"
             },
             "type": "library",
             "autoload": {
@@ -35,19 +36,17 @@
                 {
                     "name": "Yilong Peng",
                     "email": "948800401@qq.com",
-                    "homepage": "https://github.com/YilongPeng",
                     "role": "Developer"
                 }
             ],
             "description": "library",
-            "time": "2018-09-14T06:17:14+00:00"
+            "time": "2019-12-09T11:22:23+00:00"
         }
     ],
-    "packages-dev": [],
     "aliases": [],
-    "minimum-stability": "stable",
+    "minimum-stability": "dev",
     "stability-flags": {
-        "nezumi/myfunctions": 20
+        "nezimi/my-functions": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,

@@ -181,8 +181,15 @@ abstract class Connection
      * @return array $result 
      * 
      */
-    public function select(Query $query, $sql, $type = PDO::FETCH_ASSOC) {
-		$this->query($sql);
+    public function select(Query $query, $type = PDO::FETCH_ASSOC) {
+        $options = $query->getOptions();
+		$sql = $this->builder->select($query);
+
+        if( $options['fetch_sql'] ){
+            return $this->getRealSql($sql, $query->bind);
+        }
+
+        $this->query($sql, $query->bind);
 		$result = $this->statement->fetchAll($type);
 		return $result;	
 	}
