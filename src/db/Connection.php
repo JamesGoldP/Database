@@ -1,9 +1,9 @@
 <?php
-namespace Nezimi\db;
+namespace zero\db;
 
 use PDO;
-use Nezimi\Db;
-use Nezimi\Register;
+use zero\Db;
+use zero\Register;
 
 abstract class Connection
 {
@@ -71,7 +71,7 @@ abstract class Connection
         }
         $db = Register::get($key);
         if( !$db ){
-            $connectorClass = 'Nezimi\\db\\connector\\'.ucfirst($dbConfig['type']); 
+            $connectorClass = 'zero\\db\\connector\\'.ucfirst($dbConfig['type']); 
             $db = new $connectorClass($dbConfig);
             Register::set($key, $db);
         }

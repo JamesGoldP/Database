@@ -6,26 +6,38 @@
  * Time: 1:42 PM
  */
 
-namespace Nezimi;
+namespace zero;
 
 class Db{
 
-    protected static $config;
+    /**
+     * database configs
+     *
+     * @var array
+     */
+    protected static $config = [];
 
     /**
      * @param array $config
      */
-    public static function setConfig($config = [])
+    public static function setConfig(array $config = []): void
     {
         self::$config = $config;
     }
 
     /**
-     * @param array $config
+     * gets configs
+     *
+     * @param string $name
+     * @return string | array
      */
-    public static function getConfig()
+    public static function getConfig(string $name = null)
     {
-        return self::$config;
+        if( $name ){
+            return self::$config[$name] ?? [];
+        } else {
+            return self::$config;
+        }
     }
 
     /**

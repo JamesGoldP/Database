@@ -1,5 +1,5 @@
 <?php
-namespace Nezimi;
+namespace zero;
 
 class Collection{
 

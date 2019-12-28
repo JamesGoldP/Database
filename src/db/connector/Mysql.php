@@ -1,13 +1,13 @@
 <?php
-namespace Nezimi\db\connector;
+namespace zero\db\connector;
 
-use Nezimi\db\Connection;
+use zero\db\Connection;
 use PDO;
 
 class Mysql extends Connection
 {
 
-    protected $builderPosition = '\\Nezimi\\db\\builder\\Mysql';
+    protected $builderPosition = '\\zero\\db\\builder\\Mysql';
 
     protected function parseDsn($config)
     {

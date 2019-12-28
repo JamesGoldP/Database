@@ -1,5 +1,5 @@
 <?php
-namespace Nezimi\db;
+namespace zero\db;
 
 class Expression{
 

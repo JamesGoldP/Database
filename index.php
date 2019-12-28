@@ -2,8 +2,8 @@
 include './Loader.php';
 spl_autoload_register('Loader::_autoload');
 require 'vendor/autoload.php';
-use Nezimi\Model;
-use Nezimi\Db;
+use zero\Model;
+use zero\Db;
 
 class admin extends Model{
 
@@ -15,11 +15,9 @@ class admin extends Model{
     }
 
 }
-$config = require_once './config.php';
-require_once './src/functions.php';
+$config = require_once './config/database.php';
 
 $model = new admin();
-
 
 // $result = $model->field(['name','money'])->limit(99)->order('id desc')->group('name')->having('name=\'jimmy2\'')->select();
 
@@ -41,7 +39,6 @@ $model = new admin();
 // $result = $model->where('thumb&title', 'like', '%what%')->find();
 // $result = $model->where('id', '<', 7)->whereOr('id', '>', 1)->find();
 $result = collection($model->where('id', ['>=', 1], ['<=', 7], 'and')->select())->toArray();
-
 
 /**
  * U

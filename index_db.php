@@ -7,9 +7,10 @@
 include './Loader.php';
 spl_autoload_register('Loader::_autoload');
 require 'vendor/autoload.php';
-use Nezimi\Db;
+use zero\Db;
 
-$config = require_once './config.php';
+$config = require_once './config/database.php';
+Db::setConfig($config);
 
 // //D
 // Db::table('cms_account')->where(['name'=>'jimmy2'])->delete();

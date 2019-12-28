@@ -6,7 +6,7 @@
  * Time: 2:07 AM
  */
 
-namespace Nezimi\db;
+namespace zero\db;
 use Exception;
 use PDO;
 

@@ -1,5 +1,5 @@
 <?php
-use Nezimi\Collection;
+use zero\Collection;
 
 if( !function_exists('collection') ){
    function collection($resultSet)

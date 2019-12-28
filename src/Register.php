@@ -6,7 +6,7 @@
  * Time: 1:37 PM
  */
 
-namespace Nezimi;
+namespace zero;
 
 class Register{
 

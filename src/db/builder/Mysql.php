@@ -1,8 +1,8 @@
 <?php
-namespace Nezimi\db\builder;
+namespace zero\db\builder;
 
-use Nezimi\db\Builder;
-use Nezimi\db\Query;
+use zero\db\Builder;
+use zero\db\Query;
 
 class Mysql extends Builder
 {

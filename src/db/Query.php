@@ -6,12 +6,12 @@
  * Time: 1:09 PM
  */
 
-namespace Nezimi\db;
+namespace zero\db;
 
 use Exception;
-use Nezimi\Db;
-use Nezimi\Model;
-use Nezimi\db\Connection;
+use zero\Db;
+use zero\Model;
+use zero\db\Connection;
 
 class Query{
 
@@ -127,7 +127,7 @@ class Query{
      *  @return boolean,query resource,int
      *
      */
-    public function insert( $data, $return_insert_id = false, $replace = false )
+    public function insert( array $data, bool $return_insert_id = false, bool $replace = false )
     {
         $this->setOption('data', $data);
         $this->beforeAction();

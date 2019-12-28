@@ -1,5 +1,5 @@
 <?php
-namespace Nezimi\model\concern;
+namespace zero\model\concern;
 
 trait Attribute{
 

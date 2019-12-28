@@ -6,8 +6,8 @@
  * Time: 1:24 PM
  */
 
-namespace Nezimi;
-use Nezimi\db\Query;
+namespace zero;
+use zero\db\Query;
 
 class Model{
 

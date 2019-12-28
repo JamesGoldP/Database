@@ -1,7 +1,7 @@
 <?php
-namespace Nezimi\db\connector;
+namespace zero\db\connector;
 
-use Nezimi\db\Connection;
+use zero\db\Connection;
 
 class Sqlite extends Connection
 {

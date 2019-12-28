@@ -1,5 +1,5 @@
 <?php
-namespace Nezimi\model\relation;
+namespace zero\model\relation;
 
 class BelongsTo{
 
