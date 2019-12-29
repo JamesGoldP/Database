@@ -8,6 +8,8 @@
 
 namespace zero;
 
+use zero\db\Query;
+
 class Db{
 
     /**

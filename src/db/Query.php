@@ -25,18 +25,7 @@ class Query{
      * @var string
      * 
      */
-    public $options = [
-        'field' => '*',
-        'table' => '',
-        'join' => '',
-        'where' => [],
-        'group' => '',
-        'having' => '',
-        'order' => '',
-        'limit' => '',
-        'data' => [],
-        'fetch_sql' => false,
-    ];
+    public $options = [];
 
     /**
      * current model
@@ -117,27 +106,39 @@ class Query{
     }
 
     /**
-     *  Inserting data from the table
+     * Inserting one data
      *
-     *
-     *  @param $data   array        插入数组
-     *  @param $return_insert_id boolean   是否返回插入ID
-     *  @param $replace  boolean 是使用replace into 还是insert into
-     *
-     *  @return boolean,query resource,int
-     *
+     * @param array $data
+     * @param boolean $replace
+     * @param boolean $getLastInsId
+     * @return void
      */
-    public function insert( array $data, bool $return_insert_id = false, bool $replace = false )
+    public function insert( array $data, bool $replace = false, bool $getLastInsId = false )
     {
+        $data = array_merge($this->options['data'], $data);
         $this->setOption('data', $data);
         $this->beforeAction();
         $result = $this->connection->insert($this, $replace);
         $this->afterAction();
 
-        if( $this->options['fetch_sql'] ){
-            return $result;
-        }
-        return $return_insert_id ? $this->connection->insertId() : $result;
+        return $result;
+    }
+
+    /**
+     * insert multi record
+     *
+     * @param array $dataSet
+     * @param boolean $replace
+     * @return void
+     */
+    public function insertAll( array $dataSet = [], bool $replace = false )
+    {
+        $dataSet = array_merge($this->options['data'], $dataSet);
+        $this->setOption('data', $dataSet);
+        $this->beforeAction();
+        $result = $this->connection->insertAll($this, $replace);
+        $this->afterAction();
+        return $result;
     }
 
     /**
@@ -236,6 +237,48 @@ class Query{
     }
 
     /**
+     * set data
+     *
+     * @param [type] $field
+     * @param [type] $value
+     * @return void
+     */
+    public function data($field, $value = null)
+    {
+        if( is_null($value) ){
+            $this->options['data'] = !empty($this->options['data']) ? array_merge($this->options['data'], $field) : $field; 
+        } else {
+            $this->options['data'][$field] = $value;
+        }   
+        return $this;
+    }
+
+    /**
+     * 指定字段
+     *
+     * @param mixed $field
+     * @return $this
+     */
+    public function field($field)
+    {
+        if( empty($field) ){
+            return $this;
+        }
+
+        if( is_string($field) ){
+            $field = array_map('trim', explode(',', $field));
+        }
+
+        if( isset($this->options['field']) ){
+            $field = array_merge($this->options['field'], $field);
+        }
+
+        $this->options['field'] = array_unique($field);
+
+        return $this;
+    }
+
+    /**
      * gets select sql
      *
      * @return string
@@ -325,9 +368,36 @@ class Query{
     public function parseOptions()
     {
         $options = $this->options;
+
+        //获取数据表
         if( empty($options['table']) ){
             $this->setOption('table', $this->getTable());
         }
+
+        if( !isset($options['field']) ){
+            $options['field'] = '*';
+        }   
+
+        foreach(['data', 'join', 'where'] as $name){
+            if( !isset($options[$name]) ){
+                $options[$name] = [];
+            }
+        }
+
+        foreach(['fetch_sql'] as $name){
+            if( !isset($options[$name]) ){
+                $options[$name] = false;
+            }
+        }
+
+        foreach(['group', 'having', 'limit', 'order'] as $name){
+            if( !isset($options[$name]) ){
+                $options[$name] = '';
+            }
+        }
+        $this->options = $options;
+
+        return $options;
     }
 
     /**
@@ -346,7 +416,7 @@ class Query{
         if( '' === $name ){
             return $this->options;
         }
-        return isset($this->options[$name]) ? $this->options[$name] : NULL;
+        return $this->options[$name] ?? null;
     }   
     
     /**

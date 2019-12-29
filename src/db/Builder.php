@@ -68,9 +68,10 @@ class Builder{
     public function select($query)
     {
         $options = $query->getOptions();
+
         $search = ['%FIELD%', '%TABLE%', '%JOIN%', '%WHERE%', '%GROUP%', '%HAVING%', '%ORDER%', '%LIMIT%'];
         $replace = [
-            $this->parseField($options['field']), 
+            $this->parseField($query, $options['field']), 
             $this->parseTable($options['table']), 
             $this->parseJoin($options['join']), 
             $this->parseWhere($query, $options['where']), 
@@ -124,7 +125,7 @@ class Builder{
         $values_str = implode(',', $values);
         $method = $replace ? 'REPLACE' : 'INSERT';
         // $insert_sql = $method.' INTO '.$this->options['table'].'('.$field_str.')'.' values('.$values_str.')';
-        $search = ['%INSERT%', '%TABLE%', '%FIELD%', '%VALUES%'];
+        $search = ['%INSERT%', '%TABLE%', '%FIELD%', '%DATA%'];
         $replace = [
             $method, 
             $this->parseTable($options['table']), 
@@ -134,17 +135,39 @@ class Builder{
         return str_replace($search, $replace, $this->insertSql);
     }
 
-    public function parseData(Query $query, $data)
+    /**
+     * parse data
+     *
+     * @param Query $query
+     * @param array $data   
+     * @param array $fields 
+     * @param array $bind   绑定类型 like PDO::PARAM_INT|
+     * @return void
+     */
+    public function parseData(Query $query, array $data = [], array $fields = [], $bind = [])
     {
         $result = [];
 
-        $binds = $this->connection->getTableInfo($query->getOptions('table'), 'bind');
+        if( empty($data) ){
+            return $result;
+        }
 
-        foreach($data as $key=>$value){
-            $k = $this->parseKey($query, $key);
-            $bindType = $binds[$k] ?? PDO::PARAM_STR;
-            $val = $query->bind($value, $bindType);
-            $result[$k] = $val; 
+        $options = $query->getOptions();
+
+        if( empty($bind) ){
+            $bind = $this->connection->getTableInfo($query->getOptions('table'), 'bind');
+        }
+
+        foreach($data as $key => $val){
+            $item = $this->parseKey($query, $key);
+            if( !in_array($key, $fields, true) ){
+                throw new Exception('field not exists:['. $key . ']');
+            } elseif( is_scalar($val) ){
+                $bindType = $bind[$item] ?? PDO::PARAM_STR;
+                $v = $query->bind($val, $bindType);
+                $result[$item] = $v; 
+            }
+            
         }
         return $result;
     }
@@ -171,19 +194,23 @@ class Builder{
      *
      * @return string
      */
-    public function parseField($data){
-        $str = '';
-        if( is_string($data) && trim($data) == '*'){
-            $str = '*';
-        } else if( is_string($data) ){
-            $arr = explode(',', $data);
-            $str = implode(',', $arr);
-        } else if( is_array($data)  ){
-            $str = implode(',', $data);
-        } else {
-            $str = '*';
+    public function parseField(Query $query, $fields){
+        if('*' == $fields || empty($fields)){
+            $fieldStr = '*';
+        } elseif( is_array($fields) ){
+            //支持 字段 => 别名 这样定义字段
+            $array = [];
+            foreach($fields as $key => $field){
+                if( !is_numeric($key) ){
+                    $array[] = $this->parseKey($query, $key) . ' AS ' . $this->parseKey($query, $field, true);
+                } else {
+                    $array[] = $this->parseKey($query, $field);
+                }
+            }
+            $fieldStr = implode(',', $array);
         }
-        return $str;
+        
+        return $fieldStr;
     }
 
     /**

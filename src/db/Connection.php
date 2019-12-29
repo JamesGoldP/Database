@@ -231,10 +231,21 @@ abstract class Connection
 		return $result;	
     }
 
-    public function insert(Query $query, $replace)
+    public function insert(Query $query, bool $replace)
     {
         $options = $query->getOptions();
         $sql = $this->builder->insert($query, $replace);
+        if( $options['fetch_sql'] ){
+            return $this->getRealSql($sql, $query->bind);
+        }
+        $result = $this->query($sql, $query->bind);
+		return $result;	
+    }
+
+    public function insertAll(Query $query, bool $replace)
+    {
+        $options = $query->getOptions();
+        $sql = $this->builder->insertAll($query);
         if( $options['fetch_sql'] ){
             return $this->getRealSql($sql, $query->bind);
         }
@@ -357,7 +368,7 @@ abstract class Connection
             $pk = NUll;
         }
         $result = [
-            'field' => array_keys($info),
+            'fields' => array_keys($info),
             'type'  => $type,
             'bind'  => $bind,
             'pk'    => $pk,
