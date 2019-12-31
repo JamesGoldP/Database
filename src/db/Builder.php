@@ -56,7 +56,7 @@ class Builder{
         $options = $query->getOptions();
         $search = ['%TABLE%', '%WHERE%'];
         $replace = [
-            $this->parseTable($options['table']), 
+            $this->parseTable($query, $options['table']), 
             $this->parseWhere($query, $options['where']), 
         ];
         return str_replace($search, $replace, $this->deleteSql);
@@ -68,12 +68,11 @@ class Builder{
     public function select($query)
     {
         $options = $query->getOptions();
-
         $search = ['%FIELD%', '%TABLE%', '%JOIN%', '%WHERE%', '%GROUP%', '%HAVING%', '%ORDER%', '%LIMIT%'];
         $replace = [
             $this->parseField($query, $options['field']), 
-            $this->parseTable($options['table']), 
-            $this->parseJoin($options['join']), 
+            $this->parseTable($query, $options['table']), 
+            $this->parseJoin($query, $options['join']), 
             $this->parseWhere($query, $options['where']), 
             $this->parseGroup($options['group']), 
             $this->parseHaving($options['having']), 
@@ -98,7 +97,7 @@ class Builder{
         $dataSql = substr($dataSql, 0, -1);
         $search = ['%TABLE%', '%DATA%', '%WHERE%'];
         $replace = [
-            $this->parseTable($options['table']), 
+            $this->parseTable($query, $options['table']), 
             $dataSql, 
             $this->parseWhere($query, $options['where']),
         ];
@@ -128,7 +127,7 @@ class Builder{
         $search = ['%INSERT%', '%TABLE%', '%FIELD%', '%DATA%'];
         $replace = [
             $method, 
-            $this->parseTable($options['table']), 
+            $this->parseTable($query, $options['table']), 
             $field_str, 
             $values_str
         ];
@@ -220,8 +219,27 @@ class Builder{
      *
      * @return string
      */
-    public function parseTable($str){
-        return $str;
+    public function parseTable(Query $query, $tables){
+        $item = [];
+        $options = $query->getOptions();
+
+        foreach((array) $tables as $key => $table){
+            if( !is_numeric($key) ){
+                //通过table 带过来的alias参数
+                $key = $this->connection->parseSqlTable($key);
+                $item[] = $this->parseKey($query, $key) . ' ' . $this->parseKey($query, $table);
+            } else {
+                //通过alias函数带过来的
+                $table = $this->connection->parseSqlTable($table);
+
+                if( isset($options['alias'][$table]) ){
+                    $item[] = $this->parseKey($query, $table) . ' ' . $this->parseKey($query, $options['alias'][$table]);
+                } else {
+                    $item[] = $this->parseKey($query, $table);
+                }
+            }
+        }
+        return implode(',', $item);
     }
 
     protected function parseWhere(Query $query, $where)
@@ -370,20 +388,33 @@ class Builder{
     }
 
     /**
+     * parse the array of the join
      *
-     *
-     * @param
-     *
-     * @return string
-     *
+     * @param Query $query
+     * @param array $join
+     * @return void
      */
-    public function parseJoin($data, $condition = NULL, $type = 'INNER')
+    protected function parseJoin(Query $query, array $join)
     {
-        $str = '';
-        if( !empty($data) ){
-            $str = ' '.$type.' JOIN '.$data.' ON '.$condition;
+        $joinStr = '';
+        
+        foreach($join as $item){
+            list($table, $type, $on) = $item;
+            $condition = [];
+
+            foreach((array) $on as $val){
+                if( strpos($val, '=') ){
+                    list($table1, $table2) = explode('=', $val);
+                    $condition[] = $this->parseKey($query, $table1) . '=' . $this->parseKey($query, $table2);
+                } else {
+                    $condition = $val;
+                }
+            }
+
+            $table = $this->parseTable($query, $table);
+            $joinStr .= ' ' . $type .  ' JOIN ' . $table . ' ON ' . implode(' AND ', $condition);
         }
-        return $str;
+        return $joinStr;
     }
 
     /**
@@ -410,26 +441,12 @@ class Builder{
     /**
      * Parse limit
      *
-     * @param string $limit
-     *
+     * @param mixed $limit
      * @return string
-     *
      */
-    public function parseLimit($limit)
+    protected function parseLimit($limit): string
     {
-        $limit_str = '';
-        if( $limit == '' ){
-            return $limit_str;
-        } else if( is_string($limit) || is_numeric($limit) ){
-            $limit_str = ' LIMIT '.$limit;
-        } else if( is_array($limit) ){
-            if( count($limit)==1 ){
-                $limit_str = ' LIMIT '.$limit[0];
-            } else {
-                $limit_str = ' LIMIT '.$limit[0].','.$limit[1];
-            }
-        }
-        return $limit_str;
+        return $limit ? 'LIMIT' . $limit : '';
     }
 
     public function parseCompare(Query $query, $field, $operator, $value, $bindType)

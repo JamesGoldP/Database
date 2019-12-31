@@ -38,6 +38,8 @@ class Query{
     protected $name;
 
     /**
+     * current the prefix of the table
+     * 
      * @var string prefix
      */
     protected $prefix;
@@ -63,6 +65,39 @@ class Query{
      */
     public function table($table)
     {
+        if( is_string($table) ){
+            if( strpos($table, ',') ){
+                $tables = explode(',', $table);
+                $table = [];
+
+                foreach($tables as $item){
+                    list($item, $alias) = explode(' ', trim($item));
+                    if($alias){
+                        $this->alias([$item => $alias]);
+                        $table[$item] = $alias;
+                    } else {
+                        $talbe[] = $item;
+                    }
+                }   
+            } elseif (strpos($table, ' ')){
+                list($table, $alias) = explode(' ', $table);
+                $table = [$table => $alias];
+                $this->alias($table);
+            }
+        } elseif (is_array($table)){
+            $tables = $table;
+            $table = [];
+
+            foreach($tables as $key=>$val){
+                if( is_numeric($key) ){
+                    $table[] = $val;
+                } else {
+                    $this->alias([$key => $val]);
+                    $table[$key] = $val;
+                }
+            }
+        }
+
         $this->setOption('table', $table);
         return $this;
     }
@@ -78,24 +113,55 @@ class Query{
 
     /**
      * gets table
+     *
+     * @param string $table
+     * @return void
      */
-    public function getTable($table = '')
+    public function getTable(string $table = ''): string
     {
         if( is_null($table) && isset($this->options['table']) ){
             return $this->options['table'];
         }
+
         $table = $table ?: $this->name;
+
         return $this->prefix. Db::parseName($table);    
     }
 
     /**
-     * 
+     * the alias of the table 
+     *
+     * @param array|string $alias
+     * @return void
      */
-    public function alias($name)
+    public function alias($alias)
     {
-        $this->setOption('table', $this->getOptions('table').' AS '.$name);
+        if( is_array($alias) ){
+            foreach($alias as $key => $val){
+                if( false !== strpos($table, '__') ){
+                    $table = $this->connection->parseSqlTable($table);
+                } else {
+                    $table = $key;
+                }
+                $this->options['alias'][$table] = $val;
+            } 
+        } else {
+            if( isset($this->options['table']) ){
+                $table = is_array($this->options['table']) ? key($this->options['table']) : $this->options['table'];
+                if( false !== strpos($table, '__') ){
+                    $table = $this->connection->parseSqlTable($table);
+                }
+            } else {
+                $table = $this->getTable();
+            }
+
+            $this->options['alias'][$table] = $alias;
+        }
+
         return $this;
     }
+
+
 
     /**
      * 
@@ -279,6 +345,78 @@ class Query{
     }
 
     /**
+     * 指定查询数量
+     *
+     * @param mixed $offset
+     * @param int $length
+     * @return $this
+     */
+    public function limit($offset, $length = null)
+    {
+        if( is_null($length) && strpos($offset, ',') ){
+            list($offset, $length) = explode(',', $offset);
+        }
+
+        $this->options['limit'] = intval($offset) . ($length ? ','. intval($length) : '');
+        
+        return $this;
+    }
+
+    public function join($join, $condition = null, $type = 'INNER')
+    {
+        if( empty($condition) ){
+            //如果为数组，则表示有多个join，需要循环调用
+            foreach($join as $key => $value) {
+                if( is_array($value) && 2 <= count($value) ){
+                    $this->join($value[0], $value[1], $value[2] ?? $type);
+                }
+            }
+        } else {
+            $table = $this->getJoinTable($join);
+
+            $this->options['join'][] = [$table, strtoupper($type), $condition];
+        }
+        return $this;
+    }
+
+    /**
+     * gets the table and alias of the join
+     *
+     * @param array|string $join
+     * @return void
+     */
+    public function getJoinTable($join)
+    {
+        if( is_array($join) ){
+            $table = $join;
+        } else {
+            $join = trim($join);
+            $prefix = $this->prefix;
+            
+            if( strpos($join, ' ') ){
+                //存在别名
+                list($table, $alias) = explode(' ', $join);
+            } else {
+                $table = $join;
+                //[$table=>$prefix.$table]
+                if( false === strpos($join, '.') && 0 !== strpos($join, '__') ){
+                    $alias = $join;
+                }
+            }
+
+            if( $prefix && false === strpos($table, '.') && 0 !== strpos($table, '__') ){
+                $table = $this->getTable($table);
+            }
+
+            if( isset($alias) && $table != $alias ){
+                $table = [$table => $alias];
+            }
+        }
+        return $table;
+    }
+
+
+    /**
      * gets select sql
      *
      * @return string
@@ -371,9 +509,9 @@ class Query{
 
         //获取数据表
         if( empty($options['table']) ){
-            $this->setOption('table', $this->getTable());
+            $options['table'] = $this->getTable(); 
         }
-
+        
         if( !isset($options['field']) ){
             $options['field'] = '*';
         }   

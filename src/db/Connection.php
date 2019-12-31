@@ -321,16 +321,19 @@ abstract class Connection
 
     /**
      * convert table from __TABNLE_NAME__ to prefix.table_name
+     *
+     * @param string $table
+     * @return string
      */
-    public function parseSqlTable($table)
+    public function parseSqlTable(string $table): string
     {
         if( false !== strpos($table, '__') ){
             $prefix = $this->config['prefix'];
             preg_replace_callback('/__(A-Z0-9_-)__/U', function ($match) use ($prefix){
                 return $prefix . strtolower($match(1)); 
-            }, $sql);
+            }, $table);
         }
-        return $sql;
+        return $table;
     }
 
     public function getFieldBindType($type)

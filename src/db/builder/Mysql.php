@@ -37,7 +37,7 @@ class Mysql extends Builder
     protected $insertAllSql = '%INSERT% INTO %TABLE%(%FIELD%) VALUES %DATA%';
     
     /**
-     * 字段和表名处理
+     * deal with fields and table's name
      *
      * @param Query $query
      * @param mixed $key
