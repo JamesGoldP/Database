@@ -1,7 +1,7 @@
 <?php
 namespace zero\model\concern;
 
-trait SoftDelete
+trait RelationShip
 {
 
 }

@@ -1,7 +1,8 @@
 <?php
 namespace zero;
 
-class Collection{
+class Collection implements \ArrayAccess, \Countable, \IteratorAggregate
+{
 
     /**
      * data set
@@ -12,6 +13,56 @@ class Collection{
     public function __construct($items = [])
     {
         $this->items = $items;
+    }
+
+    /**
+     * whether $this->items is empty
+     *
+     * @return boolean
+     */
+    public function isEmpty()
+    {
+        return empty($this->items);
+    }
+
+    /**
+     * countable
+     *
+     * @return void
+     */
+    public function count(): int
+    {
+        return count($this->items);
+    }
+
+    public function offsetExists( $offset ) : bool
+    {
+        return isset($this->items[$offset]);
+    }
+
+    public function offsetGet( $offset ) 
+    {
+        return $this->items[$offset] ?? null;
+    }
+
+    public function offsetSet( $offset, $value ) : void
+    {
+        if( is_null($offset) ){
+            $this->items[] = $value;
+        } else {
+            $this->items[$offset] = $value;
+        }
+    }
+
+    public function offsetUnset( $offset ) : void
+    {
+        unset($this->items[$offset]);
+    }
+
+    //IteratorAggregate
+    public function getIterator()
+    {
+        return new \ArrayIterator($this->items);
     }
 
     /**

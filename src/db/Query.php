@@ -252,10 +252,10 @@ class Query{
      */
     protected function resultSetToModelCollection(array $resultSet)
     {
-        foreach($resultSet as &$value){
-            $this->resultToModel($value);
+        foreach($resultSet as &$result){
+            $this->resultToModel($result);
         }
-        return $resultSet;
+        return $result->toCollection($resultSet);
     }
 
     /**
@@ -680,7 +680,7 @@ class Query{
 
     public function resultToModel(&$result)
     {
-        return $result = $this->model->newInstance($result); 
+        $result = $this->model->newInstance($result); 
     }
 
     /**

@@ -1,10 +1,16 @@
 <?php
 namespace zero\model\concern;
 
-trait Attribute{
+trait Attribute
+{
 
     public function setAttr($key, $value)
     {
         $this->data[$key] = $value;
+    }
+
+    public function getAttr($name)
+    {
+        return $this->data[$name];
     }
 }
