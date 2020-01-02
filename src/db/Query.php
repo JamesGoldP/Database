@@ -161,14 +161,13 @@ class Query{
         return $this;
     }
 
-
-
     /**
      * 
      */
     public function model(Model $model)
     {
         $this->model = $model;
+        return $this;
     }
 
     /**
@@ -258,17 +257,26 @@ class Query{
         return $result->toCollection($resultSet);
     }
 
+    public function get($data)
+    {
+        return $this->find($data);
+    }
+
     /**
      * gets one record
      *
      * @return type
      *
      */
-    public function find()
+    public function find($data = null)
     {
-        $this->beforeAction();
+        $this->parseOptions();
+
+        if( !is_null($data) ){
+            $this->parsePkWhere($data);
+        }
+
         $result = $this->connection->find($this);
-        $this->afterAction();
 
         if( $this->options['fetch_sql'] ){
             return $result;
@@ -429,37 +437,40 @@ class Query{
     }
 
     /**
-     * 根据主键获取一条记录
+     * 把主键转换为查询条件
      *
-     * @param string $sql 查询sql
-     * @param string $type 类型
-     *
-     * @return array or false
-     *
+     * @param  $data
+     * @return void
      */
-    public function getByPrimary($table, $primary, $field = '*')
+    public function parsePkWhere($data)
     {
-        $sql = 'select %s from %s where '.$this->getPrimary($table).'=%d';
-        $sprintf_sql = sprintf($sql, $this->parsefield($field), $table, $primary);
-        return  $this->find($this, $sprintf_sql);
-    }
+        $pk = $this->getPk($this->options);
 
-    /**
-     * gets primary key of table
-     *
-     * @return string
-     *
-     */
-    public function getPrimary()
-    {
-        $this->connection->query('DESC '.$this->options['table']);
-        while($row = $this->fetch()){
-            if( $row['Key']=='PRI' ){
-                $primary = $row['Field'];
-                break;
+        $table = $this->options['table'];
+
+        $alias = $this->options['alias'][$table] ?? null;
+
+        $key = !is_null($alias) ? $alias . '.' . $pk : $pk;
+        
+        $where[$pk] = strpos($data, ',') ? [$key, 'IN', $data] : [$key, '=', $data];
+
+        if( !empty($where) ){
+            if( isset($this->options['where']['AND']) ){
+                $this->options['where']['AND'] = array_merge($this->options['where']['AND'], $where);
+            } else {
+                $this->options['where']['AND'] = $where;
             }
         }
-        return $primary;
+    }
+
+    public function getPk($options = '')
+    {
+        if( !empty($this->pk) ){
+            $pk = $this->pk;
+        } else {
+            $pk = $this->connection->getTableInfo( is_array($options) ? $options['table'] : $this->getTable(), 'pk'  );
+        }
+        return $pk;
     }
 
     protected function beforeAction()
@@ -680,7 +691,7 @@ class Query{
 
     public function resultToModel(&$result)
     {
-        $result = $this->model->newInstance($result); 
+        return $result = $this->model->newInstance($result); 
     }
 
     /**

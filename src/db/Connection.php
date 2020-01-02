@@ -368,7 +368,7 @@ abstract class Connection
         if( isset($pk) ){
             $pk = count($pk) > 1 ? $pk : $pk[0];
         } else {
-            $pk = NUll;
+            $pk = null;
         }
         $result = [
             'fields' => array_keys($info),

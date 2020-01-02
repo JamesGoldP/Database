@@ -446,7 +446,7 @@ class Builder{
      */
     protected function parseLimit($limit): string
     {
-        return $limit ? 'LIMIT' . $limit : '';
+        return $limit ? ' LIMIT ' . $limit : '';
     }
 
     public function parseCompare(Query $query, $field, $operator, $value, $bindType)

@@ -42,11 +42,6 @@ class Model implements \ArrayAccess, \Countable
     protected $table;
 
     /**
-     * @var
-     */
-    protected $data;
-
-    /**
      * @var string prefix
      */
     protected $prefix;
@@ -55,7 +50,6 @@ class Model implements \ArrayAccess, \Countable
      * @var
      */
     protected $cache;
-
 
     /**
      * the name of the model
@@ -80,7 +74,12 @@ class Model implements \ArrayAccess, \Countable
         return $class;
     }
     
-    public function newInstance($data)
+    /**
+     * 
+     * @param array $data
+     * @return $this
+     */
+    public function newInstance($data = [])
     {
         return new static($data);
     }
@@ -92,11 +91,17 @@ class Model implements \ArrayAccess, \Countable
     {
         //update table of Quer options
         $query = new Query();
+
+        $query->model($this)->name($this->name);
+
         if( !empty($this->table) ){
             $query->table($this->table);
-        } else {
-            $query->name($this->name);
         }
+
+        if( !empty($this->pk) ){
+            $query->pk($this->pk);
+        }
+
         return $query;
     }
 
@@ -166,7 +171,12 @@ class Model implements \ArrayAccess, \Countable
     public function __call( string $name , array $arguments )
     {
         $query = $this->buildQuery();
-        $query->model($this);
         return call_user_func_array([$query, $name], $arguments);
+    }
+
+    public static function __callStatic( string $name , array $arguments )
+    {
+        $model = new static();
+        return call_user_func_array([$model->buildQuery(), $name], $arguments);
     }
 }
