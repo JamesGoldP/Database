@@ -12,6 +12,7 @@ use Exception;
 use zero\Db;
 use zero\Model;
 use zero\db\Connection;
+use zero\helper\Str;
 
 class Query{
 
@@ -125,7 +126,7 @@ class Query{
 
         $table = $table ?: $this->name;
 
-        return $this->prefix. Db::parseName($table);    
+        return $this->prefix. Str::snake($table);    
     }
 
     /**
@@ -226,27 +227,6 @@ class Query{
     }
 
     /**
-     * Returns an array containing all of the result set rows
-     *
-     */
-    public function select()
-    {
-        $this->beforeAction();
-        $resultSet = $this->connection->select($this);
-        $this->afterAction();
-
-        if( $this->options['fetch_sql'] ){
-            return $resultSet;
-        }
-
-        //result
-        if( !empty($this->model) ){
-            return $this->resultSetToModelCollection($resultSet);
-        }
-        return $resultSet;
-    }
-
-    /**
      * 转换结果集
      */
     protected function resultSetToModelCollection(array $resultSet)
@@ -287,6 +267,35 @@ class Query{
             return $this->resultToModel($result);
         } 
         return $result;
+    }
+    public function all($data = null)
+    {
+        return $this->select($data);
+    }
+
+    /**
+     * Returns an array containing all of the result set rows
+     *
+     */
+    public function select($data = null)
+    {
+        $this->parseOptions();
+
+        if( !is_null($data) ){
+            $this->parsePkWhere($data);
+        }
+
+        $resultSet = $this->connection->select($this);
+
+        if( $this->options['fetch_sql'] ){
+            return $resultSet;
+        }
+
+        //result
+        if( !empty($this->model) ){
+            return $this->resultSetToModelCollection($resultSet);
+        }
+        return $resultSet;
     }
 
     /**
@@ -452,8 +461,12 @@ class Query{
 
         $key = !is_null($alias) ? $alias . '.' . $pk : $pk;
         
-        $where[$pk] = strpos($data, ',') ? [$key, 'IN', $data] : [$key, '=', $data];
-
+        if( is_array($data) ){
+            $where[$pk] = isset($data[$pk]) ? [$key, '=', $data[$pk]] : [$key, 'in', $data];
+        } else {
+            $where[$pk] = strpos($data, ',') ? [$key, 'IN', $data] : [$key, '=', $data];
+        }
+        
         if( !empty($where) ){
             if( isset($this->options['where']['AND']) ){
                 $this->options['where']['AND'] = array_merge($this->options['where']['AND'], $where);
@@ -777,6 +790,29 @@ class Query{
         $this->bind[$name] = [$value, $type];
         return $name;
     }
+
+    /**
+     * remove the condition of the where
+     *
+     * @param string $filed
+     * @param string $logic
+     * @return void
+     */
+    public function removeWhereField(string $filed, string $logic = 'AND')
+    {
+        $logic = strtoupper($logic);
+
+        if( isset($this->options['where'][$logic]) ){
+            foreach( $this->options['where'][$logic] as $key => $val ) {
+                if( is_array($val) && $val[0] == $filed ){
+                    unset($this->options['where'][$logic][$key]);
+                }
+            }
+        }
+        
+        return $this;
+    }
+
 
     public function isBind($key)
     {

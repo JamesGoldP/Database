@@ -2,9 +2,9 @@
     "name": "nezimi/zero-orm",
     "description": "ORM FRAMEWORK",
     "homepage": "https://github.com/PengYilong/zero-orm",
-    "minimum-stability": "dev",
     "require": {
-		"php": ">=5.4"
+        "php": ">=7.1.0",
+        "nezimi/zero-helper": "dev-master"
     },
     "authors": [
         {
@@ -19,6 +19,5 @@
         }
     },
     "require-dev": {
-        "nezimi/my-functions": "dev-master"
     }
 }

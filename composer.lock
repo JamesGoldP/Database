@@ -4,29 +4,30 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "684d9d596af5278538142888aefb3f79",
-    "packages": [],
-    "packages-dev": [
+    "content-hash": "44ce611601f93d8c5552fc28f2ceb52c",
+    "packages": [
         {
-            "name": "nezimi/my-functions",
+            "name": "nezimi/zero-helper",
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "https://github.com/PengYilong/my-functions.git",
-                "reference": "d23eaece5cfc5561b28ae205a5eb7eb1db8183fc"
+                "url": "https://github.com/PengYilong/zero-helper.git",
+                "reference": "90def7ac867cb23c3773b68b8a6d3ec6442313a3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PengYilong/my-functions/zipball/d23eaece5cfc5561b28ae205a5eb7eb1db8183fc",
-                "reference": "d23eaece5cfc5561b28ae205a5eb7eb1db8183fc",
+                "url": "https://api.github.com/repos/PengYilong/zero-helper/zipball/90def7ac867cb23c3773b68b8a6d3ec6442313a3",
+                "reference": "90def7ac867cb23c3773b68b8a6d3ec6442313a3",
                 "shasum": ""
             },
             "require": {
-                "php": ">=5.6"
+                "php": ">=7.1.0"
             },
             "type": "library",
             "autoload": {
-                "psr-4": [],
+                "psr-4": {
+                    "zero\\": "src"
+                },
                 "files": [
                     "src/functions.php"
                 ]
@@ -39,19 +40,21 @@
                     "role": "Developer"
                 }
             ],
-            "description": "library",
-            "time": "2019-12-09T11:22:23+00:00"
+            "description": "function library",
+            "homepage": "https://github.com/PengYilong/zero-helper",
+            "time": "2020-01-04T14:24:38+00:00"
         }
     ],
+    "packages-dev": [],
     "aliases": [],
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "stability-flags": {
-        "nezimi/my-functions": 20
+        "nezimi/zero-helper": 20
     },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
-        "php": ">=5.4"
+        "php": ">=7.1.0"
     },
     "platform-dev": []
 }

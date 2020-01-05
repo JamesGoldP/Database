@@ -42,18 +42,6 @@ class Db{
         }
     }
 
-    /**
-     * 
-     * @return string 
-     */
-    public static function parseName($str)
-    {
-        $dstr = preg_replace_callback('/([A-Z]{1})/', function ($matchs) {
-            return '_' . strtolower($matchs[0]);
-        }, $str);
-        return ltrim($dstr, '_');
-    }
-
     public static function __callStatic( string $name , array $arguments )
     {
         return call_user_func_array([new Query, $name], $arguments);

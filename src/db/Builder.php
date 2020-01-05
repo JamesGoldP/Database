@@ -449,21 +449,40 @@ class Builder{
         return $limit ? ' LIMIT ' . $limit : '';
     }
 
-    public function parseCompare(Query $query, $field, $operator, $value, $bindType)
+    public function parseCompare(Query $query, string $field, string $operator, $value, $bindType)
     {
         return $field . ' ' . $operator . ' ' . $value;
     }
 
-    public function parseLike(Query $query, $field, $operator, $value, $bindType)
+    public function parseLike(Query $query, string $field, string $operator, $value, $bindType)
     {
         return $field . ' ' . $operator . ' ' . $value;
     }
 
-    public function parseBetween(Query $query, $field, $operator, $value, $bindType)
+    public function parseBetween(Query $query, string $field, string $operator, $value, $bindType)
     {
         $data = is_array($value) ? $value : explode(',', $value);
         $min = $query->bind($data[0], $bindType);
         $max = $query->bind($data[1], $bindType);
         return $field . ' ' . $operator . ' ' . $min . ' AND ' . $max;
+    }
+
+    protected function parseIn(Query $query, string $field, string $operator, $value, $bindType)
+    {
+        $value = array_unique( is_array($value) ? $value : explode(',', $value) );
+        $array = [];
+
+        foreach ($value as $k => $v) {
+            $array[] = $query->bind($v, $bindType);
+        }
+
+        if( count($array) == 1 ) {
+            return $field . ('IN' == $operator ? ' = ' : ' <> ' ) . $array[0];
+        } else {
+            $zone = implode(',', $array);
+            $value = $zone ?: '\'\'';
+        }
+        
+        return $field . ' ' . $operator .  ' (' . $value . ')';
     }
 }

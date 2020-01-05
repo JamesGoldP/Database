@@ -84,6 +84,12 @@ class Model implements \ArrayAccess, \Countable
         return new static($data);
     }
 
+    public function db()
+    {
+        $query = $this->buildQuery();
+        return $query;
+    }
+
     /**
      * build a query
      */
@@ -168,15 +174,25 @@ class Model implements \ArrayAccess, \Countable
         return $this->data;
     }
 
+    /**
+     * Undocumented function
+     *
+     * @param string $name
+     * @return void
+     */
+    public function __get($name)
+    {
+        return $this->getAttr($name);
+    }
+
     public function __call( string $name , array $arguments )
     {
-        $query = $this->buildQuery();
-        return call_user_func_array([$query, $name], $arguments);
+        return call_user_func_array([$this->db(), $name], $arguments);
     }
 
     public static function __callStatic( string $name , array $arguments )
     {
         $model = new static();
-        return call_user_func_array([$model->buildQuery(), $name], $arguments);
+        return call_user_func_array([$model->db(), $name], $arguments);
     }
 }
