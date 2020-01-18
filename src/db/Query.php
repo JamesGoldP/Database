@@ -19,14 +19,7 @@ class Query{
     /**
      * @var 
      */
-    protected $connection;
-
-    /**
-     * query params
-     * @var string
-     * 
-     */
-    public $options = [];
+    public $connection;
 
     /**
      * current model
@@ -39,11 +32,25 @@ class Query{
     protected $name;
 
     /**
+     * 当前数据表主键
+     *
+     * @var string
+     */
+    public $pk;
+
+    /**
      * current the prefix of the table
      * 
      * @var string prefix
      */
     protected $prefix;
+
+    /**
+     * query params
+     * @var string
+     * 
+     */
+    public $options = [];
 
     /**
      * @var array
@@ -179,13 +186,14 @@ class Query{
      * @param boolean $getLastInsId
      * @return void
      */
-    public function insert( array $data, bool $replace = false, bool $getLastInsId = false )
+    public function insert( array $data = [], bool $replace = false, bool $getLastInsId = false )
     {
+        $this->parseOptions();
+
         $data = array_merge($this->options['data'], $data);
         $this->setOption('data', $data);
-        $this->beforeAction();
+
         $result = $this->connection->insert($this, $replace);
-        $this->afterAction();
 
         return $result;
     }
@@ -199,11 +207,13 @@ class Query{
      */
     public function insertAll( array $dataSet = [], bool $replace = false )
     {
+        $this->parseOptions();
+
         $dataSet = array_merge($this->options['data'], $dataSet);
         $this->setOption('data', $dataSet);
-        $this->beforeAction();
+        
         $result = $this->connection->insertAll($this, $replace);
-        $this->afterAction();
+        
         return $result;
     }
 
@@ -213,17 +223,16 @@ class Query{
      *  @return int number of affected rows in previous MySQL operation
      *
      */
-    public function update($data = [], $return_affected_rows = false)
+    public function update(array $data = [])
     {
-        $this->setOption('data', $data);
-        $this->beforeAction();
-        $result = $this->connection->update($this);
-        $this->afterAction();
+        $this->parseOptions();
 
-        if( $this->options['fetch_sql'] ){
-            return $result;
-        }
-        return $return_affected_rows ? $this->affectedRows() : $result;
+        $data = array_merge($this->options['data'], $data);
+        $this->setOption('data', $data);
+
+        $result = $this->connection->update($this);
+
+        return $result;
     }
 
     /**
@@ -232,7 +241,7 @@ class Query{
     protected function resultSetToModelCollection(array $resultSet)
     {
         foreach($resultSet as &$result){
-            $this->resultToModel($result);
+            $this->resultToModel($result, $this->options, true);
         }
         return $result->toCollection($resultSet);
     }
@@ -243,10 +252,31 @@ class Query{
     }
 
     /**
+     * Deletes Data
+     *
+     * @param [type] $data
+     * @return string|int
+     */
+    public function delete($data = null)
+    {
+        $this->parseOptions();
+
+        if( !is_null($data) && true !== $data){
+            $this->parsePkWhere($data);
+        }
+
+        $this->options['data'] = $data;
+
+        $result = $this->connection->delete($this);
+
+        return $result;
+    }
+
+    /**
      * gets one record
      *
-     * @return type
-     *
+     * @param [type] $data
+     * @return void
      */
     public function find($data = null)
     {
@@ -262,12 +292,19 @@ class Query{
             return $result;
         }
 
+        if(empty($result)) {
+            return $this->resultToEmpty();
+        }   
+
         //result
         if( !empty($this->model) ){
-            return $this->resultToModel($result);
-        } 
+            //返回模型对象
+            return $this->resultToModel($result, $this->options);
+        }
+
         return $result;
     }
+
     public function all($data = null)
     {
         return $this->select($data);
@@ -296,27 +333,6 @@ class Query{
             return $this->resultSetToModelCollection($resultSet);
         }
         return $resultSet;
-    }
-
-    /**
-     *  Deletes Data
-     *
-     *  @param  string $$talbe
-     *
-     *  @return int
-     *
-     */
-    public function delete()
-    {
-        $this->beforeAction();
-        $result = $this->connection->delete($this);
-        $this->afterAction();
-
-        if( $this->options['fetch_sql'] ){
-            return $result;
-        }
-
-        return $result;
     }
 
     /**
@@ -358,6 +374,18 @@ class Query{
 
         $this->options['field'] = array_unique($field);
 
+        return $this;
+    }
+
+    /**
+     * 设置是否严格检查字段名
+     *
+     * @param boolean $strict
+     * @return void
+     */
+    public function strict($strict = true)
+    {
+        $this->setOption('strict', $strict);
         return $this;
     }
 
@@ -670,11 +698,12 @@ class Query{
     public function fetchSql($fetch = true)
     {
         $this->setOption('fetch_sql', $fetch);
+
         return $this;
     }
 
     /**
-     * 
+     * 启动事务 
      */
     public function startTrans()
     {
@@ -682,7 +711,7 @@ class Query{
     }
 
     /**
-     * 
+     * 用于非自动提交状态下面的查询提交
      */
     public function commit()
     {
@@ -690,7 +719,7 @@ class Query{
     }
 
     /**
-     * 
+     * 事务回滚
      */
     public function rollback()
     {
@@ -702,15 +731,31 @@ class Query{
         return $this->connection->find($this, $sql);
     }
 
-    public function resultToModel(&$result)
+    public function resultToModel(array &$result, array $options = [], bool $resultSet = false)
     {
-        return $result = $this->model->newInstance($result); 
+        return $result = $this->model->newInstance($result, $resultSet ? null : $this->getModelUpdateCondition($options)); 
+    }
+
+    public function resultToEmpty()
+    {
+        return !empty($this->model) ? $this->model->newInstance([], $this->getModelUpdateCondition($this->options)) : [];
+    }
+
+    /**
+     * 获取模型的更新条件
+     *
+     * @param array $options
+     * @return void
+     */
+    protected function getModelUpdateCondition(array $options) : array
+    {
+        return $options['where']['AND'] ?? [];
     }
 
     /**
      * 
      */
-    public function where($field, $operator = NULL, $condition = NULL, $param = [])
+    public function where($field, $operator = null, $condition = null, $param = [])
     {
         $param = func_get_args();
         $this->parseWhereExp('AND', $field, $operator, $condition, $param);
@@ -720,7 +765,7 @@ class Query{
     /**
      * 
      */
-    public function whereOr($field, $operator = NULL, $condition = NULL)
+    public function whereOr($field, $operator = null, $condition = null)
     {
         $this->parseWhereExp('OR', $field, $operator, $condition);
         return $this;
@@ -784,7 +829,7 @@ class Query{
         $whereItem[$logic] = isset($whereItem[$logic]) ? array_merge($whereItem[$logic], $where) : $where;
     }
 
-    public function bind($value, $type, $name = NULL)
+    public function bind($value, $type, $name = null)
     {
         $name = $name ?: ':Bind_' . (count($this->bind)+1) . '_';
         $this->bind[$name] = [$value, $type];

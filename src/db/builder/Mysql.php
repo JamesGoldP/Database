@@ -40,11 +40,11 @@ class Mysql extends Builder
      * deal with fields and table's name
      *
      * @param Query $query
-     * @param mixed $key
+     * @param [type] $key
      * @param boolean $strict
      * @return string
      */
-    public function parseKey(Query $query, $key, $strict = false): string
+    public function parseKey(Query $query, $key, bool $strict = false): string
     {
         if( is_numeric($key) ){
             return $key;

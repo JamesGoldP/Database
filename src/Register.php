@@ -27,8 +27,7 @@ class Register{
      */
     public static function get($alias)
     {
-        if (!isset(self::$objects[$alias]))
-        {
+        if (!isset(self::$objects[$alias])){
             return false;
         }
         return self::$objects[$alias];

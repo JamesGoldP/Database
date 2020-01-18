@@ -9,16 +9,25 @@ class Mysql extends Connection
 
     protected $builderPosition = '\\zero\\db\\builder\\Mysql';
 
-    protected function parseDsn($config)
+    /**
+     * 解析pdo连接的dsn信息
+     *
+     * @param array $config
+     * @return string
+     */
+    protected function parseDsn(array $config) : string
     {
-        $dsn = 'mysql:host='.$config['hostname'].';dbname='.$config['database'];
-        
-        if( !empty($config['hostport']) ){
-            $dsn .= ';port = '. $config['hostport'];
+        if( !empty($config['hostport']) ) {
+            $dsn = 'mysql:host=' . $config['hostname'] . ';port' . $config['hostport'];
+        } else {
+            $dsn = 'mysql:host=' . $config['hostname'];
         }
-        if( !empty($config['charset']) ){
-            $dsn .= ';charset = '. $config['charset'];
+        $dsn .= ';dbname=' . $config['database'];
+
+        if(!empty($config['charset'])) {
+            $dsn .= ';charse=' . $config['charset'];
         }
+
         return $dsn;
     }
 
@@ -29,8 +38,7 @@ class Mysql extends Connection
     {
         $table = $this->builder->addSymbol($table, '`');
         $sql = 'SHOW COLUMNS FROM '.$table;
-        $this->query($sql);
-        $result = $this->statement->fetchAll(PDO::FETCH_ASSOC);
+        $result = $this->query($sql);
         $info = [];
         foreach($result as $key=>$val){
             $val = array_change_key_case($val);

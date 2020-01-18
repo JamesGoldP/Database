@@ -2,8 +2,10 @@
 namespace zero\db;
 
 use PDO;
+use PDOException;
 use zero\Db;
 use zero\Register;
+use Exception;
 
 abstract class Connection
 {
@@ -14,6 +16,18 @@ abstract class Connection
     protected $statement;
 
     /**
+     * @var string the sql of the query
+     */
+    protected $querySql;
+
+    /**
+     * 返回或者影响记录数
+     *
+     * @var integer
+     */
+    protected $numRows = 0;
+
+    /**
      * @var current databse connection resource
      */
     protected $link;
@@ -22,6 +36,13 @@ abstract class Connection
      * @var all database connection resource
      */
     protected $links;
+
+    /**
+     * 查询结果类型
+     *
+     * @var [type]
+     */
+    protected $fetchType = PDO::FETCH_ASSOC;
 
     /**
      * @var databse connection configuration
@@ -39,14 +60,25 @@ abstract class Connection
     protected $fieldCase = PDO::CASE_LOWER;
 
     /**
-     * @var string the sql of the query
-     */
-    protected $querySql;
-
-    /**
      * equal $query->bind
      */
     protected $bind;
+
+    /**
+     * PDO 连接参数
+     *
+     * @var array
+     */
+    protected $params = [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+    ];
+
+    /**
+     * 事务执行次数
+     *
+     * @var integer
+     */
+    protected $transTimes = 0;
 
     public function __construct(array $config)
     {
@@ -54,26 +86,21 @@ abstract class Connection
         $this->builder = new $this->builderPosition($this);
     }
 
-    /*
-     * @return false or object
+    /**
+     * Undocumented function
+     *
+     * @param string $name
+     * @param boolean $force
+     * @return void
      */
-    public static function instance( $id = 'master' )
+    public static function instance(string $name = null, bool $force = false)
     {
-        $key = 'database_'.$id;
-        $databaseConfig = Db::getConfig();
-        if( empty($databaseConfig) ){
-            throw new Exception('No config');
-        }
-        if( $id == 'master' ){
-            $dbConfig = $databaseConfig['master'];
-        } else {
-            $dbConfig = $databaseConfig[array_rand($databaseConfig['slave'])];
-        }
-        $db = Register::get($key);
-        if( !$db ){
+        $dbConfig = Db::getConfig();
+        $db = Register::get($name);
+        if( $force || !$db ){
             $connectorClass = 'zero\\db\\connector\\'.ucfirst($dbConfig['type']); 
             $db = new $connectorClass($dbConfig);
-            Register::set($key, $db);
+            Register::set($name, $db);
         }
         return $db;
     }
@@ -84,104 +111,165 @@ abstract class Connection
     abstract protected function getFields($table);
 
     /**
-     * 
+     * 连接数据库方法
+     *
+     * @param array $config  连接参数
+     * @param integer $linkNum 连接序号
+     * @param boolean $autoConnection 是否自动连接主数据库
+     * @return void
      */
-	public function connect($linkNum = 0){
+	public function connect(array $config = [], int $linkNum = 0, bool $autoConnection = false){
 		//check PDO
 		if(!class_exists('PDO')){
             throw new Exception('Don\'t support PDO');
         }
         
-        if( !is_null($this->links[$linkNum]) ){
+        if( isset($this->links[$linkNum]) ){
             return $this->links[$linkNum];
+        }
+
+        if(!$config) {
+            $config = $this->config;
+        } else {
+            $config = array_merge($this->config, $config);
+        }
+
+        // 连接参数
+        if ( isset($config['params']) && is_array($config['params']) ) {
+            $params = array_merge($config['params'], $this->params);
+        } else {
+            $params = $this->params;
         }
 
 		//start connection
 		try{
-            $config = $this->config;
-            $this->parseDsn($config);
+            if ( empty($config['dsn'] ) ) {
+                $config['dsn'] = $this->parseDsn($config);;
+            }
+            
             //whether long connection
             if( $config['pconnect'] ){
                 $config['params'][constant('PDO::ATTR_PERSISTENT')] = true;
             }
-            $dsn = $this->parseDsn($config);
-            $config['params'] = isset($config['params']) ? $config['params'] : []; 
-            $this->link = $this->links[$linkNum] = new PDO($dsn, $config['username'], $config['password'], $config['params']);
+            $this->link = $this->links[$linkNum] = new PDO($config['dsn'], $config['username'], $config['password'], $params);
             return $this->link;	
 		} catch (PDOException $e){
             if( $config['autoconnect'] ){
-                return $this->connect($linkNum);
+                return $this->connect($config, $linkNum, $autoConnection);
+            } else {
+                throw $e;
             }
-            throw $e;
 		}
-	    	
 	}
 
     /**
-     * R
-     * @return 
-     * @throw PDOException
+     * 执行查询 返回数据集
+     *
+     * @param string $sql
+     * @param array $bind
+     * @return void
      */
-    public function query($sql, $bind = [])
+    public function query(string $sql, $bind = []) : array
     {
-        $this->connect();
+        $this->initConnect();
+
         if( !$this->link ){
             return false;
         }
         
         $this->bind = $bind;
+        
+        // 记录SQL语句
         $this->querySql = $sql;
+
         //判断之前是否有结果集,如果有的话，释放结果集
         if( !empty($this->statement) ){
             $this->free();
         }
         
-        try{
+        try {
             $this->statement = $this->link->prepare($sql);
             $this->bindParam($bind);
-            return $result = $this->statement->execute();
-        } catch (\PDOException $e) {
+            $this->statement->execute();
+            
+            //返回结果集
+            return $this->getResult();
+        } catch (PDOException $e) {
             throw $e;
-        }   
+        } catch(Exception $e) {
+            throw $e;
+        } 
        
     }
 
     /**
-     * CUD 
-     * @param string $sql 
-     * @return int or false
+     * 执行语句 
+     *
+     * @param string $sql
+     * @param array $bind
+     * @return int
      */
-    public function execute($sql)
+    public function execute(string $sql, array $bind = []) : int
     {
-        $this->connect();
+        $this->initConnect();
+
         if( !$this->link ){
             return false;
         }
+        
+        $this->bind = $bind;
+        
+        // 记录SQL语句
+        $this->querySql = $sql;
+
         //判断之前是否有结果集,如果有的话，释放结果集
         if( !empty($this->statement) ){
             $this->free();
         }
-        return $this->link->exec($sql);
+        
+        try {
+            $this->statement = $this->link->prepare($sql);
+            $this->bindParam($bind);
+            $this->statement->execute();
+            
+            $this->numRows = $this->statement->rowCount();
+
+            return $this->numRows;
+        } catch (PDOException $e) {
+            throw $e;
+        } catch(Exception $e) {
+            throw $e;
+        } 
     }
 
     protected function bindParam($data)
     {
-        foreach($data as $key=>$val){
-            $this->statement->bindValue($key, $val[0], $val[1]);
+        foreach($data as $key => $val){
+            $result = $this->statement->bindValue($key, $val[0], $val[1]);
         }
+        
+    }
+
+    /**
+     * 获得数据集数组
+     *
+     * @return void
+     */
+    protected function getResult() : array
+    {
+        $result = $this->statement->fetchAll($this->fetchType);
+        $this->numRows = count($result);
+
+        return $result;
     }
 
     /**
      * get multi records
      *
-     * @param string $sql sql
-     * @param constant $type return type
-     *                    PDO::FETCH_BOTH  PDO::FETCH_ASSOC PDO::FETCH_NUM
-     * 
-     * @return array $result 
-     * 
+     * @param Query $query
+     * @return $result get multi records
      */
-    public function select(Query $query, $type = PDO::FETCH_ASSOC) {
+    public function select(Query $query) {
         $options = $query->getOptions();
 		$sql = $this->builder->select($query);
 
@@ -189,36 +277,37 @@ abstract class Connection
             return $this->getRealSql($sql, $query->bind);
         }
 
-        $this->query($sql, $query->bind);
-		$result = $this->statement->fetchAll($type);
+        $result = $this->query($sql, $query->bind);
 		return $result;	
 	}
 
-	/**
+    /**
      * get one record
-     * 
-     * @param object Query
-     * @param string $sql sql
-     * @param constant $type return type 
-     *                    PDO::FETCH_BOTH  PDO::FETCH_ASSOC PDO::FETCH_NUM
-     * 
-     * @return array $result 
-     * 
+     *
+     * @param Query $query
+     * @return $result array | string
      */
-	public function find(Query $query, $type = PDO::FETCH_ASSOC) {
+	public function find(Query $query) {
         $options = $query->getOptions();
         $query->setOption('limit', 1);
         $sql = $this->builder->select($query);
-
+        
         if( $options['fetch_sql'] ){
             return $this->getRealSql($sql, $query->bind);
         }
 
-        $this->query($sql, $query->bind);
-        $result = $this->fetch($type);
+        $resultSet = $this->query($sql, $query->bind);
+        $result = $resultSet[0] ?? [];        
+
 		return $result;	
     }
 
+    /**
+     * update records
+     *
+     * @param Query $query
+     * @return $result array | int 
+     */
     public function update(Query $query)
     {
         $options = $query->getOptions();
@@ -227,41 +316,82 @@ abstract class Connection
         if( $options['fetch_sql'] ){
             return $this->getRealSql($sql, $query->bind);
         }
-        $result = $this->query($sql, $query->bind);
+        $result = $this->execute($sql, $query->bind);
 		return $result;	
     }
 
-    public function insert(Query $query, bool $replace)
+    /**
+     * Undocumented function
+     *
+     * @param Query $query
+     * @param boolean $replace
+     * @return int | string
+     *  
+     */
+    public function insert(Query $query, bool $replace, bool $getLastInsId = false)
     {
         $options = $query->getOptions();
+
         $sql = $this->builder->insert($query, $replace);
+
         if( $options['fetch_sql'] ){
             return $this->getRealSql($sql, $query->bind);
         }
-        $result = $this->query($sql, $query->bind);
+
+        $result = $this->execute($sql, $query->bind);
+
+        if($result) {
+            $lastInsId = $this->getLastInsId();
+
+            if($getLastInsId) {
+                return $lastInsId;
+            }
+        }
+
 		return $result;	
     }
 
-    public function insertAll(Query $query, bool $replace)
+    /**
+     * Undocumented function
+     *
+     * @param Query $query
+     * @param boolean $replace
+     * @return int | string
+     *  
+     */
+    public function insertAll(Query $query, bool $replace, bool $getLastInsId = false)
     {
         $options = $query->getOptions();
         $sql = $this->builder->insertAll($query);
         if( $options['fetch_sql'] ){
             return $this->getRealSql($sql, $query->bind);
         }
-        $result = $this->query($sql, $query->bind);
+        $result = $this->execute($sql, $query->bind);
 		return $result;	
     }
 
+    /**
+     * 删除记录
+     *
+     * @param Query $query
+     * @return string|int
+     */
     public function delete(Query $query)
     {
         $options = $query->getOptions();
+        $data = $options['data'];
+
+        if( true !== $data && empty($options['where']) ) {
+            throw new Exception('delele without condition!');
+        }
+
         $sql = $this->builder->delete($query);
 
         if( $options['fetch_sql'] ){
             return $this->getRealSql($sql, $query->bind);
         }
-        $result = $this->query($sql, $query->bind);
+
+        $result = $this->execute($sql, $query->bind);
 		return $result;	
     }
 
@@ -297,9 +427,13 @@ abstract class Connection
     }
 
     /**
-     * 
+     * gets a real sql
+     *
+     * @param string $sql
+     * @param array $bind
+     * @return string
      */
-    protected function getRealSql($sql, array $bind = [])
+    protected function getRealSql(string $sql, array $bind = []) : string
     {
         foreach($bind as $key=>$val){
             $value = $val[0];
@@ -316,6 +450,7 @@ abstract class Connection
                 $sql
             );
         }
+
         return $sql;
     }
 
@@ -349,13 +484,17 @@ abstract class Connection
     }
 
     /**
-     * 
+     * Undocumented function
+     *
+     * @param [type] $table
+     * @param string $method
+     * @return void
      */
     public function getTableInfo($table, $method = '')
     {
         $info = $this->getFields($table);
         $fields = array_keys($info);
-        
+
         $bind = $type = [];
         foreach($info as $key=>$val){
             $type[$key] = $val['type'];
@@ -370,8 +509,9 @@ abstract class Connection
         } else {
             $pk = null;
         }
+
         $result = [
-            'fields' => array_keys($info),
+            'fields' => $fields,
             'type'  => $type,
             'bind'  => $bind,
             'pk'    => $pk,
@@ -406,12 +546,11 @@ abstract class Connection
     }
 
     /**
-     * 取得上一步 INSERT 操作表产生的auto_increment,就是自增主键
-     * 
-     * @return int
-     * 
+     * 取得上一步 INSERT 操作表产生的auto_increment,就是自增主
+     *
+     * @return void
      */
-    public function insertId()
+    public function getLastInsId()
     {
         return $this->link->lastInsertId();
     }
@@ -422,11 +561,33 @@ abstract class Connection
      */
     public function startTrans()
     {
+        $this->initConnect(true);
+
         if( !$this->link ){
-            $this->connect();
+            return false;
         }
-        $this->link->beginTransaction();
+
+        ++$this->transTimes;
+
+        try {
+            if( 1 == $this->transTimes ){
+                $this->link->beginTransaction();
+            }
+        } catch(Exception $e) {
+            throw $e;
+        }
+        
     }
+
+    protected function initConnect($master = true)
+    {
+        if( $this->config['deploy'] ){
+
+        } elseif (!$this->link) {
+            $this->link = $this->connect();
+        }
+    }
+
 
     /**
      * auto commit enable
@@ -434,16 +595,24 @@ abstract class Connection
      */
     public function commit()
     {
-        $this->link->commit();
+        if( 1 == $this->transTimes ){
+            $this->link->commit();
+        }
+        
+        --$this->transTimes;
     }
 
     /**
-     * rollback sql
+     * rollback
      * @return type
      */
     public function rollback()
     {
-        $this->link->rollback();
+        if( 1 == $this->transTimes ){
+            $this->link->rollback();
+        }
+
+        $this->transTimes = max(0, $this->transTimes-1);
     }
     
     public function fieldCase($info)

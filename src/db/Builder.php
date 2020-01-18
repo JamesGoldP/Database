@@ -49,11 +49,15 @@ class Builder{
     }
 
     /**
-     * 
+     * build a delete sql
+     *
+     * @param Query $query
+     * @return string
      */
-    public function delete($query)
+    public function delete(Query $query) : string
     {
         $options = $query->getOptions();
+
         $search = ['%TABLE%', '%WHERE%'];
         $replace = [
             $this->parseTable($query, $options['table']), 
@@ -64,8 +68,11 @@ class Builder{
 
     /**
      * build a select sql 
+     *
+     * @param Query $query
+     * @return string
      */
-    public function select($query)
+    public function select(Query $query) : string
     {
         $options = $query->getOptions();
         $search = ['%FIELD%', '%TABLE%', '%JOIN%', '%WHERE%', '%GROUP%', '%HAVING%', '%ORDER%', '%LIMIT%'];
@@ -79,14 +86,16 @@ class Builder{
             $this->parseOrder($options['order']), 
             $this->parseLimit($options['limit']),
         ];
-        $sql = str_replace($search, $replace, $this->selectSql);
-        return $sql;
+        return str_replace($search, $replace, $this->selectSql);
     }
 
     /**
      * build a update sql
+     *
+     * @param Query $query
+     * @return string
      */
-    public function update(Query $query)
+    public function update(Query $query) : string
     {
         $options = $query->getOptions();
         $dataSql = '';
@@ -106,30 +115,30 @@ class Builder{
     
     /**
      * build a insert sql
+     *
+     * @param Query $query
+     * @param boolean $replace
+     * @return void
      */
-    public function insert(Query $query, $replace)
+    public function insert(Query $query, bool $replace = false) : string
     {
         $options = $query->getOptions();
-        $data = $options['data'];
+
+        $data = $this->parseData($query, $options['data']);
 
         if( empty($data) ){
-            return false;
+            return '';
         }
-        $data = $this->parseData($query, $data);
 
-        $field = array_keys($data);
+        $fields = array_keys($data);
         $values = array_values($data);
 
-        $field_str = implode(',', $field);
-        $values_str = implode(',', $values);
-        $method = $replace ? 'REPLACE' : 'INSERT';
-        // $insert_sql = $method.' INTO '.$this->options['table'].'('.$field_str.')'.' values('.$values_str.')';
         $search = ['%INSERT%', '%TABLE%', '%FIELD%', '%DATA%'];
         $replace = [
-            $method, 
+            $replace ? 'REPLACE' : 'INSERT', 
             $this->parseTable($query, $options['table']), 
-            $field_str, 
-            $values_str
+            implode(',', $fields), 
+            implode(',', $values)
         ];
         return str_replace($search, $replace, $this->insertSql);
     }
@@ -143,7 +152,7 @@ class Builder{
      * @param array $bind   绑定类型 like PDO::PARAM_INT|
      * @return void
      */
-    public function parseData(Query $query, array $data = [], array $fields = [], $bind = [])
+    public function parseData(Query $query, array $data = [], array $fields = [], $bind = []) : array
     {
         $result = [];
 
@@ -153,21 +162,32 @@ class Builder{
 
         $options = $query->getOptions();
 
+        $table = $query->getOptions('table'); 
+
         if( empty($bind) ){
-            $bind = $this->connection->getTableInfo($query->getOptions('table'), 'bind');
+            $bind = $this->connection->getTableInfo($table, 'bind');
+        }
+
+        if( empty($fields) ) {
+            if( '*' == $options['field'] ) {
+                $fields = array_keys($bind);
+            } else {
+                $fields = $options['field'];
+            }
         }
 
         foreach($data as $key => $val){
             $item = $this->parseKey($query, $key);
+
             if( !in_array($key, $fields, true) ){
-                throw new Exception('field not exists:['. $key . ']');
+                throw new Exception('The field '. $key .' of the table '. $table .' doesn\'t exist.' );
             } elseif( is_scalar($val) ){
                 $bindType = $bind[$item] ?? PDO::PARAM_STR;
                 $v = $query->bind($val, $bindType);
                 $result[$item] = $v; 
             }
-            
         }
+
         return $result;
     }
 
@@ -315,7 +335,17 @@ class Builder{
         return $whereStr;
     }
 
-    public function parseWhereItem(Query $query, $field, $val, $rule = '', $binds = [])
+    /**
+     * where 子单元分析
+     *
+     * @param Query $query
+     * @param mixed $field
+     * @param array $val
+     * @param string $rule
+     * @param array $binds
+     * @return string
+     */
+    protected function parseWhereItem(Query $query, $field, array $val, $rule = '', array $binds = []) : string
     {
         
         list($op, $value) = $val;

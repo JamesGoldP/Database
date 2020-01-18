@@ -11,14 +11,49 @@ trait Attribute
      *
      * @var string
      */
-    protected $id = 'id';
+    protected $pk = 'id';
+
+    /**
+     * 数据表字段信息 留空则自动获取
+     *
+     * @var array
+     */
+    protected $field = [];
+
+    /**
+     * 数据表废弃字段
+     *
+     * @var array
+     */
+    protected $disuse = [];
+
+    /**
+     * 数据库只读字段
+     *
+     * @var array
+     */
+    protected $readonly = [];
+
+    /**
+     * 数据库表字段类型
+     *
+     * @var array
+     */
+    protected $type = [];
 
     /**
      * @var
      */
-    protected $data;
+    protected $data = [];
 
-    public function setAttr($key, $value)
+    /**
+     * 原始数据
+     *
+     * @var array
+     */
+    private $origin = [];
+
+    public function setAttr(string $key, $value)
     {
         $this->data[$key] = $value;
     }
@@ -78,5 +113,53 @@ trait Attribute
         } 
         
         throw new InvalidArgumentException('property doesn\'t exist: ' . static::class . '->' . $name);
+    }
+
+    /**
+     * 获取变化的数据， 并排除只读数据
+     *
+     * @return array
+     */
+    public function getChangeData() : array
+    {
+        if( $this->force ) {
+            $data = $this->data;
+        } else {
+            $data = array_udiff_assoc($this->data, $this->origin, function($a, $b){
+                if( (empty($a) || empty($b) ) && $a!=$b ) {
+                    return 1;
+                }
+
+                return $a==$b ? 0 : 1;
+            });
+        }
+
+        if( !empty($this->readonly) ) {
+            //只读字段不允许更新
+            foreach ($this->readonly as $key => $field) {
+                if( isset($data[$field]) ) {
+                    unset($data[$field]);
+                }
+            }
+        }
+
+        return $data;
+    }
+
+    /**
+     * 设置写入的字段
+     *
+     * @param string|array|true $field 如果为true只允许写入数据表字段
+     * @return void
+     */
+    public function allowField($field)
+    {
+        if( is_string($field) ){
+            $field = explode(',', $field);
+        }
+
+        $this->field = $field;
+
+        return $this;
     }
 }
