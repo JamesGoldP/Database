@@ -162,4 +162,18 @@ trait Attribute
 
         return $this;
     }
+
+    /**
+     * 设置数据对象的值
+     *
+     * @param mixed $data
+     * @param mixed $value
+     * @return $this
+     */
+    public function data($data, $value = null)
+    {
+        $this->data[$data] = $value;
+
+        return $this;
+    }
 }

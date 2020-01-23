@@ -52,6 +52,15 @@ class Mysql extends Builder
 
         $key = trim($key);
 
+        if(strpos($key, '.') && !preg_match('/[,\'\"\(\)`\s]/', $key)) {
+            list($table, $key) = explode('.', $key, 2);
+
+            if('__TABLE__' == $table) {
+                $table = $query->getOptions('table');
+            }
+
+        }
+
         if( $strict && !preg_match('/^[\w\.\*]+$/', $key) ){
             throw new Exception('not support data:'. $key);
         }
@@ -59,6 +68,11 @@ class Mysql extends Builder
         if( '*' != $key && !preg_match('/[,\'\"\*\(\)`\.\s]/', $key) ){
             $key = $this->addSymbol($key, '`'); 
         }
+
+        if( isset($table) ) {
+            $key = $this->addSymbol($table, '`') . '.' . $key;
+        }
+
         return $key;
     }
 

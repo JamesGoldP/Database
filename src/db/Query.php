@@ -292,7 +292,7 @@ class Query{
             return $result;
         }
 
-        if(empty($result)) {
+        if( empty($result) ) {
             return $this->resultToEmpty();
         }   
 
@@ -519,9 +519,13 @@ class Query{
         $this->parseOptions();
     }
 
-    protected function afterAction()
-    {
-        
+    public function useSoftDelete($field, $condition = null)
+    {   
+        if($field) {
+            $this->options['soft_delete'] = [$field, $condition];
+        }
+
+        return $this;
     }
 
     /**
@@ -615,6 +619,8 @@ class Query{
     public function removeOption($name)
     {
         unset($this->options[$name]);
+        
+        return $this;
     }
 
     /**
@@ -738,7 +744,9 @@ class Query{
 
     public function resultToEmpty()
     {
-        return !empty($this->model) ? $this->model->newInstance([], $this->getModelUpdateCondition($this->options)) : [];
+        if( !empty($this->options['allow_empty']) ) {
+            return !empty($this->model) ? $this->model->newInstance([], $this->getModelUpdateCondition($this->options)) : [];
+        }
     }
 
     /**
@@ -816,7 +824,7 @@ class Query{
         return $where;
     }
 
-    protected function parseArrayWhereItems($field, $logic)
+    protected function parseArrayWhereItems($field, string $logic)
     {
         if( key($field)!==0 ){
             foreach($field as $key=>$val){
@@ -825,8 +833,13 @@ class Query{
         } else {
             $where = $field;
         }
-        $whereItem = &$this->options['where']; 
-        $whereItem[$logic] = isset($whereItem[$logic]) ? array_merge($whereItem[$logic], $where) : $where;
+
+        if( !empty($where) ) {
+            $whereItem = &$this->options['where']; 
+            $whereItem[$logic] = isset($whereItem[$logic]) ? array_merge($whereItem[$logic], $where) : $where;
+        }
+
+        return $this;
     }
 
     public function bind($value, $type, $name = null)

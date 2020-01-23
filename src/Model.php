@@ -37,7 +37,7 @@ class Model implements \ArrayAccess, \Countable
      *
      * @var boolean
      */
-    private $force = false;
+    protected $force = false;
 
     /**
      * 更新条件
@@ -127,9 +127,15 @@ class Model implements \ArrayAccess, \Countable
         return (new static($data))->isUpdate($isUpdate);
     }
 
-    public function db()
+    public function db() : Query
     {
         $query = $this->buildQuery();
+
+        // 软删除
+        if( property_exists($this, 'withTrashed') && !$this->withTrashed ) {
+            $this->withNoTrased($query);
+        } 
+
         return $query;
     }
 
@@ -220,9 +226,7 @@ class Model implements \ArrayAccess, \Countable
             return false;
         }
 
-        $model = new static();
-
-        $query = $model->db();
+        $query = (new static())->db();
 
         if( is_array($data) && key($data) !== 0 ) {
             $query->where($data);
@@ -513,7 +517,7 @@ class Model implements \ArrayAccess, \Countable
      */
     public function force($force = true)
     {
-        $this->force = true;
+        $this->force = $force;
 
         return $this;
     }

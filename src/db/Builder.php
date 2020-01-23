@@ -262,13 +262,21 @@ class Builder{
         return implode(',', $item);
     }
 
-    protected function parseWhere(Query $query, $where)
+    protected function parseWhere(Query $query, $where) : string
     {
+        $options = $query->getOptions();
         $whereStr = $this->buildWhere($query, $where);
+        
         //soft delete
+        if(!empty($options['soft_delete'])) {
+            list($field, $condition) = $options['soft_delete'];  
 
+            $binds = $this->connection->getTableInfo($options['table'], 'fields');
+            $whereStr = $whereStr ? '( ' . $whereStr . ' ) And ' : '';
+            $whereStr = $whereStr . $this->parseWhereItem($query, $field, $condition, '', $binds);
+        }
 
-        return empty($where) ? '' : ' WHERE ' . $whereStr;
+        return empty($whereStr) ? '' : ' WHERE ' . $whereStr;
     }
 
     /**
@@ -347,7 +355,9 @@ class Builder{
      */
     protected function parseWhereItem(Query $query, $field, array $val, $rule = '', array $binds = []) : string
     {
-        
+        // 字段分析
+        $key = $field ? $this->parseKey($query, $field, true) : '';
+
         list($op, $value) = $val;
         if( is_array($op) ){
             //同一字段不同条件
@@ -370,7 +380,7 @@ class Builder{
         
         foreach($this->operator as $k => $v){
             if(in_array($op, $v)){
-                $whereStr = $this->$k( $query, $this->addSymbol($field, '`'), $op, $value, $bindType);
+                $whereStr = $this->$k( $query, $key, $op, $value, $field, $bindType);
                 break;
             }
         }
@@ -479,25 +489,25 @@ class Builder{
         return $limit ? ' LIMIT ' . $limit : '';
     }
 
-    public function parseCompare(Query $query, string $field, string $operator, $value, $bindType)
+    public function parseCompare(Query $query, string $key, string $operator, $value, string $field, $bindType) : string
     {
-        return $field . ' ' . $operator . ' ' . $value;
+        return $key . ' ' . $operator . ' ' . $value;
     }
 
-    public function parseLike(Query $query, string $field, string $operator, $value, $bindType)
+    public function parseLike(Query $query, string $key, string $operator, $value, string $field, $bindType) : string
     {
-        return $field . ' ' . $operator . ' ' . $value;
+        return $key . ' ' . $operator . ' ' . $value;
     }
 
-    public function parseBetween(Query $query, string $field, string $operator, $value, $bindType)
+    public function parseBetween(Query $query, string $key, string $operator, $value, string $field, $bindType)
     {
         $data = is_array($value) ? $value : explode(',', $value);
         $min = $query->bind($data[0], $bindType);
         $max = $query->bind($data[1], $bindType);
-        return $field . ' ' . $operator . ' ' . $min . ' AND ' . $max;
+        return $key . ' ' . $operator . ' ' . $min . ' AND ' . $max;
     }
 
-    protected function parseIn(Query $query, string $field, string $operator, $value, $bindType)
+    protected function parseIn(Query $query, string $key, string $operator, $value, string $field, $bindType)
     {
         $value = array_unique( is_array($value) ? $value : explode(',', $value) );
         $array = [];
@@ -513,6 +523,6 @@ class Builder{
             $value = $zone ?: '\'\'';
         }
         
-        return $field . ' ' . $operator .  ' (' . $value . ')';
+        return $key . ' ' . $operator .  ' (' . $value . ')';
     }
 }
