@@ -76,6 +76,13 @@ class Model implements \ArrayAccess, \Countable
     protected $cache;
 
     /**
+     * 查询对象实例
+     *
+     * @var [type]
+     */
+    protected $queryInstance;
+
+    /**
      * the name of the model
      */
 
@@ -127,8 +134,30 @@ class Model implements \ArrayAccess, \Countable
         return (new static($data))->isUpdate($isUpdate);
     }
 
+    /**
+     * 设置当前模型的数据库查询对象
+     *
+     * @param Query $query
+     * @return void
+     */
+    public function setQuery(Query $query)
+    {
+        $this->queryInstance = $query;
+
+        return $this;
+    }
+
+    /**
+     * 获取当期那模型的的数据库查询对象
+     *
+     * @return Query
+     */
     public function db() : Query
     {
+        if( $this->queryInstance ) {
+            return $this->queryInstance();
+        }
+
         $query = $this->buildQuery();
 
         // 软删除
@@ -575,6 +604,19 @@ class Model implements \ArrayAccess, \Countable
     public function __set($name, $value)
     {
         return $this->setAttr($name, $value);
+    }
+
+    public function __unset($name)
+    {
+        unset($this->data[$name]);
+    }
+
+    public function __debugInfo()
+    {
+        return [
+            'data' => $this->data,
+            'relation' => $this->relation,
+        ];
     }
 
     public function __call( string $name , array $arguments )

@@ -293,15 +293,16 @@ class Builder{
             $data = [];
         }
         $binds = $this->connection->getTableInfo($query->getOptions('table'), 'bind');
+
         $whereStr = '';
-        foreach($where as $logic=>$value){
+        foreach($where as $logic => $value){
             $str = [];
             foreach($value as $val){
                 if( $val instanceof Expression ){
                     $str[] = ' ' . $logic . ' ( ' . $val->getValue(). ' )';
                     continue;   
                 }   
-
+                
                 if( is_array($val) ){
                     $field = array_shift($val);
                 } else if( !($val instanceof \Closure) ){
@@ -434,7 +435,7 @@ class Builder{
      * @param array $join
      * @return void
      */
-    protected function parseJoin(Query $query, array $join)
+    protected function parseJoin(Query $query, array $join) : string
     {
         $joinStr = '';
         
@@ -454,6 +455,7 @@ class Builder{
             $table = $this->parseTable($query, $table);
             $joinStr .= ' ' . $type .  ' JOIN ' . $table . ' ON ' . implode(' AND ', $condition);
         }
+        
         return $joinStr;
     }
 

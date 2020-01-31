@@ -55,8 +55,15 @@ class Mysql extends Builder
         if(strpos($key, '.') && !preg_match('/[,\'\"\(\)`\s]/', $key)) {
             list($table, $key) = explode('.', $key, 2);
 
+            $alias = $query->getOptions('alias');
+
             if('__TABLE__' == $table) {
                 $table = $query->getOptions('table');
+                $table = is_array($table) ? array_shift($table) : $table;
+            }
+
+            if( isset($alias[$table]) ) {
+                $table = $alias[$table];
             }
 
         }
@@ -76,9 +83,6 @@ class Mysql extends Builder
         return $key;
     }
 
-    /**
-     * build a insert sql
-     */
     /**
      * build to insert multi record of sql
      *
@@ -120,7 +124,7 @@ class Mysql extends Builder
             ['%INSERT%', '%TABLE%', '%FIELD%', '%DATA%'], 
             [
                 $replace ? 'REPLACE' : 'INSERT', 
-                $this->parseTable($options['table']), 
+                $this->parseTable($query, $options['table']), 
                 implode(',', $fields), 
                 implode(',', $values)
             ], 

@@ -352,7 +352,7 @@ abstract class Connection
     }
 
     /**
-     * Undocumented function
+     * insert multi records
      *
      * @param Query $query
      * @param boolean $replace
@@ -484,15 +484,26 @@ abstract class Connection
     }
 
     /**
-     * Undocumented function
+     * get the info of the table
      *
-     * @param [type] $table
+     * @param string|array $table  the array is talbe=>alias
      * @param string $method
      * @return void
      */
-    public function getTableInfo($table, $method = '')
+    public function getTableInfo($tableName, string $fetch = '')
     {
-        $info = $this->getFields($table);
+        if( is_array($tableName) ) {
+            $tableName = key($tableName) ?: current($tableName);
+        }
+
+        if( strpos($tableName, ',') ) {
+            // 多表不获取字段信息
+            return false;
+        } else {
+            // $tableName = $this->pareSqlTable($tableName);
+        }
+
+        $info = $this->getFields($tableName);
         $fields = array_keys($info);
 
         $bind = $type = [];
@@ -517,7 +528,7 @@ abstract class Connection
             'pk'    => $pk,
         ];
 
-        return $method ? $result[$method] : $result;
+        return $fetch ? $result[$fetch] : $result;
     }
 
     public function getLastSql()

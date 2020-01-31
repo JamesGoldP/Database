@@ -18,7 +18,7 @@ class Relation
     protected $model;
 
     /**
-     * the query of the model
+     * 关联模型查询对象
      *
      * @var Query
      */
@@ -37,4 +37,15 @@ class Relation
      * @var string
      */
     protected $localKey;
+
+    public function __call($method, $args)
+    {
+        if($this->query) {
+            $result = call_user_func_array([$this->query->getMoel(), $method], $args);
+
+            return $result === $this->query && !in_array(strtolower($method), ['fetchSql', 'fetchpdo']) ? $this : $result;
+        } else {
+            throw new Exception('The method doesn\'t:' . __CLASS__ . '->' . $method);
+        }
+    }
 }

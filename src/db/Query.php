@@ -13,6 +13,7 @@ use zero\Db;
 use zero\Model;
 use zero\db\Connection;
 use zero\helper\Str;
+use zero\model\relation\OneToOne;
 
 class Query{
 
@@ -69,7 +70,10 @@ class Query{
     }
 
     /**
-     * 
+     * set the options' table
+     *
+     * @param string|array $table array is [$table=>$alias]
+     * @return void
      */
     public function table($table)
     {
@@ -95,7 +99,6 @@ class Query{
         } elseif (is_array($table)){
             $tables = $table;
             $table = [];
-
             foreach($tables as $key=>$val){
                 if( is_numeric($key) ){
                     $table[] = $val;
@@ -107,6 +110,7 @@ class Query{
         }
 
         $this->setOption('table', $table);
+
         return $this;
     }
 
@@ -120,14 +124,14 @@ class Query{
     }
 
     /**
-     * gets table
+     * gets the table's name
      *
      * @param string $table
      * @return void
      */
     public function getTable(string $table = ''): string
     {
-        if( is_null($table) && isset($this->options['table']) ){
+        if( empty($table) && isset($this->options['table']) ){
             return $this->options['table'];
         }
 
@@ -146,8 +150,8 @@ class Query{
     {
         if( is_array($alias) ){
             foreach($alias as $key => $val){
-                if( false !== strpos($table, '__') ){
-                    $table = $this->connection->parseSqlTable($table);
+                if( false !== strpos($key, '__') ){
+                    $table = $this->connection->parseSqlTable($key);
                 } else {
                     $table = $key;
                 }
@@ -353,12 +357,16 @@ class Query{
     }
 
     /**
-     * 指定字段
+     * 指定查询字段 支持字段排除和指定数据表
      *
-     * @param mixed $field
-     * @return $this
+     * @param mixed   $field
+     * @param boolean $except     是否排除
+     * @param string  $tableName  数据表明
+     * @param string  $prefix     字段前缀
+     * @param string  $alias      别名前缀
+     * @return void
      */
-    public function field($field)
+    public function field($field, bool $except = false, string $tableName = '', string $prefix = '', string $alias = '')
     {
         if( empty($field) ){
             return $this;
@@ -366,6 +374,30 @@ class Query{
 
         if( is_string($field) ){
             $field = array_map('trim', explode(',', $field));
+            return $this;
+        }
+
+        if( true === $field ) {
+            // get all of fields
+            $fields = $this->connection->getTableInfo($tableName, 'fields');
+            $field = $fields ?: ['*'];
+        } elseif($except) {
+            // 字段排除
+            $fields = $this->getTableInfo($tableName, 'fields');
+            $field = $fields ? array_diff($fields, $field) : $field;
+        }
+
+        if($tableName) {
+            // 添加统一的前缀
+            $prefix = $prefix ?: $tableName;
+            foreach($field as $key => &$val) {
+                if( is_numeric($key) && $alias ) {
+                    $field[$prefix . '.'. $val] = $alias . $val;
+                    unset($field[$key]);
+                } elseif ( is_numeric($key) ) {
+                    $val = $prefix . '.' . $val;
+                }
+            }
         }
 
         if( isset($this->options['field']) ){
@@ -407,7 +439,15 @@ class Query{
         return $this;
     }
 
-    public function join($join, $condition = null, $type = 'INNER')
+    /**
+     * Undocumented function
+     *
+     * @param [type] $join
+     * @param [type] $condition
+     * @param string $type
+     * @return $this
+     */
+    public function join($join, $condition = null, string $type = 'INNER')
     {
         if( empty($condition) ){
             //如果为数组，则表示有多个join，需要循环调用
@@ -421,6 +461,79 @@ class Query{
 
             $this->options['join'][] = [$table, strtoupper($type), $condition];
         }
+
+        return $this;
+    }
+
+    /**
+     * eager loading
+     *
+     * @param [type] $with
+     * @return void
+     */
+    public function with($with)
+    {
+        if( empty($with) ) {
+            return $this;
+        }
+
+        if( is_string($with) ) {
+            $with = explode(',', $with);
+        }
+
+        $first = true;
+
+        $class = $this->model;
+        foreach( $with as $key => $relation ) {
+            $closure = null;
+            $field = true;
+
+            $relation = Str::camel($relation, false);
+            $model = $class->$relation();
+        }
+
+        $this->setOption('with', $with);
+
+        return $this;
+    }
+
+    /**
+     * eager loading
+     *
+     * @param [type] $with
+     * @param string $join  JOIN method
+     * @return void
+     */
+    public function withJoin($with, string $joinType = 'INNER')
+    {
+        if( empty($with) ) {
+            return $this;
+        }
+
+        if( is_string($with) ) {
+            $with = explode(',', $with);
+        }
+
+        $first = true;
+
+        $class = $this->model;
+        foreach( $with as $key => $relation ) {
+            $closure = null;
+            $field = true;
+
+            $relation = Str::camel($relation, false);
+            $model = $class->$relation();
+
+            if( $model instanceof OneToOne ) {
+                $model->eagerly($this, $relation, $field, $joinType, $closure, $first);
+                $first = false;
+            } else {
+                // 不支持其它关联
+            }
+        }
+
+        $this->setOption('with_join', $with);
+
         return $this;
     }
 
@@ -457,6 +570,7 @@ class Query{
                 $table = [$table => $alias];
             }
         }
+
         return $table;
     }
 
@@ -483,7 +597,8 @@ class Query{
     {
         $pk = $this->getPk($this->options);
 
-        $table = $this->options['table'];
+        // 还有[$table=>$name]格式
+        $table = is_array($this->options['table']) ? key($this->options['table']) :$this->options['table'];
 
         $alias = $this->options['alias'][$table] ?? null;
 
@@ -614,11 +729,20 @@ class Query{
     }   
     
     /**
-     * 
-     */  
-    public function removeOption($name)
+     * 去除查询参数
+     *
+     * @param string|boolean $option 参数名 
+     *                       true 表示消除所有参数
+     * @return $this
+     */
+    public function removeOption($option = true)
     {
-        unset($this->options[$name]);
+        if( true === $option ) {
+            $this->options = [];
+            $this->bind = [];
+        } else if (  is_string($option) && isset($this->options[$options]) ) {
+            unset($this->options[$options]);
+        }
         
         return $this;
     }
@@ -739,7 +863,17 @@ class Query{
 
     public function resultToModel(array &$result, array $options = [], bool $resultSet = false)
     {
-        return $result = $this->model->newInstance($result, $resultSet ? null : $this->getModelUpdateCondition($options)); 
+        $result = $this->model->newInstance($result, $resultSet ? null : $this->getModelUpdateCondition($options)); 
+
+        if( !$resultSet && !empty($options['with']) ) {
+            $result->eagerlyResult($result, $options['with'], []);
+        }
+
+        if( !$resultSet && !empty($options['with_join']) ) {
+            $result->eagerlyResult($result, $options['with_join'], [], true);
+        }
+        
+        return $result;
     }
 
     public function resultToEmpty()
