@@ -1,10 +1,10 @@
 {
-    "name": "nezimi/zero-orm",
+    "name": "zero-systems/zero-orm",
     "description": "ORM FRAMEWORK",
     "homepage": "https://github.com/PengYilong/zero-orm",
     "require": {
         "php": ">=7.1.0",
-        "nezimi/zero-helper": "dev-master"
+        "zero-systems/zero-helper": "dev-master"
     },
     "authors": [
         {

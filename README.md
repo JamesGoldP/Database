@@ -1,10 +1,11 @@
 ZERO-ORM
+====
 
 ## Installation
 
-Use [composer](http://getcomposer.org) to install nezimi/my-orm in your project:
+Use [composer](http://getcomposer.org) to install zero-systems/zero-orm in your project:
 ```
-composer require nezimi/zero-orm
+composer require zero-systems/zero-orm
 ```
 
 ## Usage
