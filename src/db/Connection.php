@@ -272,7 +272,7 @@ abstract class Connection
     public function select(Query $query) {
         $options = $query->getOptions();
 		$sql = $this->builder->select($query);
-
+        
         if( $options['fetch_sql'] ){
             return $this->getRealSql($sql, $query->bind);
         }
@@ -297,7 +297,7 @@ abstract class Connection
         }
 
         $resultSet = $this->query($sql, $query->bind);
-        $result = $resultSet[0] ?? [];        
+        $result = $resultSet[0] ?? null;        
 
 		return $result;	
     }

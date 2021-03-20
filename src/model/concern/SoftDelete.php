@@ -134,8 +134,8 @@ trait SoftDelete
     /**
      * 是否包含软删除数据
      *
-     * @param boolean $withTrashed
-     * @return void
+     * @param bool $withTrashed
+     * @return $this
      */
     protected function withTrashedData(bool $withTrashed)
     {

@@ -244,6 +244,10 @@ class Query{
      */
     protected function resultSetToModelCollection(array $resultSet)
     {
+        if( empty($resultSet) ) {
+            return $this->model->toCollection([]);
+        }
+
         foreach($resultSet as &$result){
             $this->resultToModel($result, $this->options, true);
         }
@@ -280,7 +284,7 @@ class Query{
      * gets one record
      *
      * @param [type] $data
-     * @return void
+     * @return null|model object
      */
     public function find($data = null)
     {
@@ -291,7 +295,7 @@ class Query{
         }
 
         $result = $this->connection->find($this);
-
+        
         if( $this->options['fetch_sql'] ){
             return $result;
         }
@@ -336,6 +340,7 @@ class Query{
         if( !empty($this->model) ){
             return $this->resultSetToModelCollection($resultSet);
         }
+
         return $resultSet;
     }
 
