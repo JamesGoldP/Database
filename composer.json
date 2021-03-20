@@ -3,12 +3,12 @@
     "description": "ORM FRAMEWORK",
     "homepage": "https://github.com/PengYilong/zero-orm",
     "require": {
-        "php": ">=7.1.0",
+        "php": ">=7.0",
         "zero-systems/zero-helper": "dev-master"
     },
     "authors": [
         {
-            "name": "Yilong Peng",
+            "name": "John Peng",
             "email": "948800401@qq.com",
             "role": "Developer"
         }

@@ -13,19 +13,17 @@ composer require zero-systems/zero-orm
 use zero\Db;
 // 数据库配置信息设置（全局有效）
 Db::setConfig([
-    'master' => [
-        'type' => 'mysql',
-        'dsn' => '',
-        'hostname' => 'localhost',
-        'database' => 'mycms',
-        'username' => 'root',
-        'password' => 'pyl',
-        'hostport' => '',
-        'prefix' => 'cms_',
-        'charset' => 'utf8',
-        'pconnect' => 0,
-        'autoconnect' => 0
-    ],
+    'type' => 'mysql',
+    'dsn' => '',
+    'hostname' => 'localhost',
+    'database' => 'mycms',
+    'username' => 'root',
+    'password' => 'pyl',
+    'hostport' => '',
+    'prefix' => 'cms_',
+    'charset' => 'utf8',
+    'pconnect' => 0,
+    'autoconnect' => 0
  ]);
 
 //D
@@ -60,19 +58,16 @@ $result = Db::name('news')->where('id', '<', 7)->whereOr('id', '>', 1)->fetchSql
 ## sample database.php 
 ```php
 return [
-    'master' => [
-        'type' => 'mysql',
-        'dsn' => '',
-        'hostname' => 'localhost',
-        'database' => 'mycms',
-        'username' => 'root',
-        'password' => 'pyl',
-        'hostport' => '',
-        'prefix' => 'cms_',
-        'charset' => 'utf8',
-        'pconnect' => 0,
-        'autoconnect' => 0
-    ],
+    'type' => 'mysql',
+    'dsn' => '',
+    'hostname' => 'localhost',
+    'database' => 'mycms',
+    'username' => 'root',
+    'password' => 'pyl',
+    'hostport' => '',
+    'prefix' => 'cms_',
+    'charset' => 'utf8',
+    'pconnect' => 0,
+    'autoconnect' => 0
 ];
-
 ```
