@@ -116,12 +116,13 @@ trait Attribute
     }
 
     /**
-     * 获取变化的数据， 并排除只读数据
+     * 获取变化的数据,并排除只读数据
      *
      * @return array
      */
     public function getChangeData() : array
     {
+      
         if( $this->force ) {
             $data = $this->data;
         } else {
@@ -142,7 +143,7 @@ trait Attribute
                 }
             }
         }
-
+        
         return $data;
     }
 

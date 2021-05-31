@@ -137,7 +137,7 @@ trait SoftDelete
      * @param bool $withTrashed
      * @return $this
      */
-    protected function withTrashedData(bool $withTrashed)
+    public function withTrashedData(bool $withTrashed)
     {
         $this->withTrashed = $withTrashed;
         return $this;

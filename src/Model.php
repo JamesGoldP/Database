@@ -416,7 +416,7 @@ class Model implements \ArrayAccess, \Countable
      * @param [type] $where
      * @return void
      */
-    public function updateData($where)
+    public function updateData($where): bool
     {
         $data = $this->getChangeData();
 
@@ -445,8 +445,13 @@ class Model implements \ArrayAccess, \Countable
             $where = $array;
         }
 
+        if(!$data) {
+            return false;
+        }
+
         //模型更新
         $db = $this->db();
+        
         $db->startTrans();
 
         try {

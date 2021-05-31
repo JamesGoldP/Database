@@ -379,7 +379,6 @@ class Query{
 
         if( is_string($field) ){
             $field = array_map('trim', explode(',', $field));
-            return $this;
         }
 
         if( true === $field ) {
