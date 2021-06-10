@@ -888,6 +888,16 @@ class Query{
     }
 
     /**
+     * get current model
+     *
+     * @return void
+     */
+    public function getModel()
+    {
+        return $this->model;
+    }
+
+    /**
      * 获取模型的更新条件
      *
      * @param array $options

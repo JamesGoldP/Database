@@ -41,7 +41,7 @@ class Relation
     public function __call($method, $args)
     {
         if($this->query) {
-            $result = call_user_func_array([$this->query->getMoel(), $method], $args);
+            $result = call_user_func_array([$this->query->getModel(), $method], $args);
 
             return $result === $this->query && !in_array(strtolower($method), ['fetchSql', 'fetchpdo']) ? $this : $result;
         } else {
