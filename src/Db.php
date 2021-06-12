@@ -1,11 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: Jonny Peng
- * Date: 2018/9/10
- * Time: 1:42 PM
- */
-
 namespace zero;
 
 use zero\db\Query;
@@ -23,9 +16,9 @@ class Db
     /**
      * @param array $config
      */
-    public static function setConfig(array $config = []): void
+    public static function setConfig(array $config = []): array
     {
-        self::$config = $config;
+        return self::$config = $config;
     }
 
     /**
