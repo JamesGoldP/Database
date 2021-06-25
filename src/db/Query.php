@@ -250,7 +250,16 @@ class Query{
 
         foreach($resultSet as &$result){
             $this->resultToModel($result, $this->options, true);
+        } 
+
+        if( $resultSet && !empty($this->options['with']) ) {
+            $result->eagerlyResultSet($result, $this->options['with'], []);
         }
+
+        if( $resultSet && !empty($this->options['with_join']) ) {
+            $result->eagerlyResultSet($result, $this->options['with_join'], [], true);
+        } 
+
         return $result->toCollection($resultSet);
     }
 
@@ -472,7 +481,7 @@ class Query{
     /**
      * eager loading
      *
-     * @param [type] $with
+     * @param string|array $with
      * @return void
      */
     public function with($with)
@@ -869,11 +878,11 @@ class Query{
     {
         $result = $this->model->newInstance($result, $resultSet ? null : $this->getModelUpdateCondition($options)); 
 
-        if( !$resultSet && !empty($options['with']) ) {
+        if( !$resultSet && !empty($this->options['with']) ) {
             $result->eagerlyResult($result, $options['with'], []);
         }
 
-        if( !$resultSet && !empty($options['with_join']) ) {
+        if( !$resultSet && !empty($this->options['with_join']) ) {
             $result->eagerlyResult($result, $options['with_join'], [], true);
         }
         
@@ -1018,7 +1027,6 @@ class Query{
         
         return $this;
     }
-
 
     public function isBind($key)
     {

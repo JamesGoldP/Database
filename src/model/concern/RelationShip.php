@@ -120,7 +120,7 @@ trait RelationShip
      * @param [type] $model
      * @return void
      */
-    protected function parseModel(string $model) : string
+    protected function parseModel(string $model): string
     {
         if( false === strpos($model, '\\') ){
             $path = explode('\\', static::class);
@@ -142,7 +142,7 @@ trait RelationShip
      * @param string $name the models'name
      * @return string
      */
-    protected function getForeignKey(string $name) : string
+    protected function getForeignKey(string $name): string
     {
         return Str::snake($name) . '_id';
     }
@@ -150,16 +150,16 @@ trait RelationShip
     /**
      * 预载入关联查询
      *
-     * @param [type] $result
-     * @param array $relation
+     * @param Model $result
+     * @param string|array $relation
      * @param array $withRelationAttr
      * @param boolean $join
      * @return void
      */
-    public function eagerlyResult(&$result, array $relation, array $withRelationAttr = [], $join = false) : void
+    public function eagerlyResultSet(&$result, $relation, array $withRelationAttr = [], $join = false)
     {
         $relations = is_string($relation) ? explode(',', $relation) : $relation;
-        
+       
         foreach($relations as $key => $relation) {
             $subRelation = '';
             $closure = null;
@@ -168,8 +168,34 @@ trait RelationShip
             $relationName = Str::snake($relation);
 
             $relationResult = $this->$relation();
+            
+            $relationResult->eagerlyRelationResultSet($result, $relation, $subRelation, $closure, $join);
+        }
+    }
 
-            $relationResult->eagerlyResult($result, $relation, $subRelation, $closure, $join);
+    /**
+     * 预载入关联查询
+     *
+     * @param Model $result
+     * @param string|array $relation
+     * @param array $withRelationAttr
+     * @param boolean $join
+     * @return void
+     */
+    public function eagerlyResult(&$result, $relation, array $withRelationAttr = [], $join = false)
+    {
+        $relations = is_string($relation) ? explode(',', $relation) : $relation;
+       
+        foreach($relations as $key => $relation) {
+            $subRelation = '';
+            $closure = null;
+
+            $relation = Str::camel($relation, false);
+            $relationName = Str::snake($relation);
+
+            $relationResult = $this->$relation();
+            
+            $relationResult->eagerlyRelationResult($result, $relation, $subRelation, $closure, $join);
         }
     }
 }

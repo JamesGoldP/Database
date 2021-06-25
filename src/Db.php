@@ -36,7 +36,7 @@ class Db
         }
     }
 
-    public static function __callStatic( string $name , array $arguments )
+    public static function __callStatic(string $name , array $arguments )
     {
         return call_user_func_array([new Query, $name], $arguments);
     }

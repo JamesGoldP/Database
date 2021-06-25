@@ -1,11 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: PengYilong
- * Date: 2018/9/8
- * Time: 1:24 PM
- */
-
 namespace zero;
 
 use zero\db\Query;
@@ -117,7 +110,7 @@ class Model implements \ArrayAccess, \Countable
     /**
      * @return string
      */
-    public function getModelName()
+    public function getModelName(): string
     {
         $arr = explode('\\', get_class($this));
         $class = end($arr);
@@ -152,7 +145,7 @@ class Model implements \ArrayAccess, \Countable
      *
      * @return Query
      */
-    public function db() : Query
+    public function db(): Query
     {
         if( $this->queryInstance ) {
             return $this->queryInstance();
@@ -196,7 +189,7 @@ class Model implements \ArrayAccess, \Countable
      * @param array $where
      * @return boolean
      */
-    public function save(array $data = [], array $where = []) : bool
+    public function save(array $data = [], array $where = []): bool
     {
         //赋值给$this->data
         if( !$this->checkBeforeSave($data, $where) ){
@@ -217,7 +210,7 @@ class Model implements \ArrayAccess, \Countable
      *
      * @return boolean
      */
-    public function delete() : bool
+    public function delete(): bool
     {
         if( !$this->isUpdate ) {
             return false;
@@ -249,7 +242,7 @@ class Model implements \ArrayAccess, \Countable
      * @param mixed $data
      * @return boolean
      */
-    public static function destroy($data) : bool
+    public static function destroy($data): bool
     {
         if( empty($data) && 0!== $data ) {
             return false;
@@ -566,7 +559,7 @@ class Model implements \ArrayAccess, \Countable
         return count($this->data);
     }
 
-    public function offsetExists( $offset ) : bool
+    public function offsetExists( $offset ): bool
     {
         return isset($this->data[$offset]);
     }
@@ -576,7 +569,7 @@ class Model implements \ArrayAccess, \Countable
         return $this->data[$offset] ?? null;
     }
 
-    public function offsetSet( $offset, $value ) : void
+    public function offsetSet( $offset, $value )
     {
         if( is_null($offset) ){
             $this->data[] = $value;
@@ -585,14 +578,9 @@ class Model implements \ArrayAccess, \Countable
         }
     }
 
-    public function offsetUnset( $offset ) : void
+    public function offsetUnset( $offset )
     {
         unset($this->data[$offset]);
-    }
-
-    public function toArray()
-    {
-        return $this->data;
     }
 
     /**

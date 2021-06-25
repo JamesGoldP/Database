@@ -42,6 +42,36 @@ class HasOne extends OneToOne
      * @param Closure $closure
      * @return void
      */
+    protected function eagerlySet(&$result, string $relation, string $subRelation, $closure)
+    {
+        $localKey = $this->localKey;
+        $foreignKey = $this->foreignKey;
+
+        $this->query->removeWhereField($foreignKey);
+
+        $data = $this->eagerlyWhere([
+            [$foreignKey, 'in', $result->$localKey],
+        ], $foreignKey, $relation, $subRelation, $closure);
+
+        if( !isset($data[$result->$localKey]) ) {
+            $relationModel = null;
+        } else  {
+            $relationModel = $data[$result->$localKey];
+            $relationModel->isUpdate(true);
+        }
+
+        $result->setRelation(Str::snake($relation), $relationModel);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param Model $result
+     * @param string $relation
+     * @param string $subRelation
+     * @param Closure $closure
+     * @return void
+     */
     protected function eagerlyOne(&$result, string $relation, string $subRelation, $closure)
     {
         $localKey = $this->localKey;

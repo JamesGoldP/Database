@@ -35,7 +35,7 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate
         return count($this->items);
     }
 
-    public function offsetExists( $offset ) : bool
+    public function offsetExists( $offset ): bool
     {
         return isset($this->items[$offset]);
     }
@@ -45,7 +45,7 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate
         return $this->items[$offset] ?? null;
     }
 
-    public function offsetSet( $offset, $value ) : void
+    public function offsetSet( $offset, $value )
     {
         if( is_null($offset) ){
             $this->items[] = $value;
@@ -54,7 +54,7 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate
         }
     }
 
-    public function offsetUnset( $offset ) : void
+    public function offsetUnset( $offset )
     {
         unset($this->items[$offset]);
     }
@@ -68,7 +68,7 @@ class Collection implements \ArrayAccess, \Countable, \IteratorAggregate
     /**
      * transfer result set to array
      */
-    public function toArray() :array
+    public function toArray(): array
     {
         return array_map(function($value){
             return $value instanceof Model ? $value->toArray() : $value;

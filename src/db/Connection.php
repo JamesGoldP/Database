@@ -121,7 +121,7 @@ abstract class Connection
 	public function connect(array $config = [], int $linkNum = 0, bool $autoConnection = false){
 		//check PDO
 		if(!class_exists('PDO')){
-            throw new Exception('Don\'t support PDO');
+            throw new PDOException('Don\'t support PDO');
         }
         
         if( isset($this->links[$linkNum]) ){

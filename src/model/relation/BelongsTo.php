@@ -42,13 +42,43 @@ class BelongsTo extends OneToOne
      * @param Closure $closure
      * @return void
      */
+    protected function eagerlySet(&$result, string $relation, string $subRelation, $closure)
+    {
+        $localKey = $this->localKey;
+        $foreignKey = $this->foreignKey;
+
+        $this->query->removeWhereField($localKey);
+        
+        $data = $this->eagerlyWhere([
+            [$localKey, 'in', $result->$foreignKey],
+        ], $localKey, $relation, $subRelation, $closure);
+
+        if( !isset($data[$result->$foreignKey]) ) {
+            $relationModel = null;
+        } else  {
+            $relationModel = $data[$result->$foreignKey];
+            $relationModel->isUpdate(true);
+        }
+
+        $result->setRelation(Str::snake($relation), $relationModel);
+    }
+
+    /**
+     * Undocumented function
+     *
+     * @param Model $result
+     * @param string $relation
+     * @param string $subRelation
+     * @param Closure $closure
+     * @return void
+     */
     protected function eagerlyOne(&$result, string $relation, string $subRelation, $closure)
     {
         $localKey = $this->localKey;
         $foreignKey = $this->foreignKey;
 
         $this->query->removeWhereField($localKey);
-
+        
         $data = $this->eagerlyWhere([
             [$localKey, '=', $result->$foreignKey],
         ], $localKey, $relation, $subRelation, $closure);

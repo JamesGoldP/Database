@@ -82,7 +82,27 @@ class OneToOne extends Relation
      * @param boolean $join
      * @return void
      */
-    public function eagerlyResult(&$result, string $relation, string $subRelation, $closure, bool $join = false)
+    public function eagerlyRelationResultset(&$result, string $relation, string $subRelation, $closure, bool $join = false)
+    {
+        if( 0 == $this->eagerlyType || $join ) {
+            // 模型JOIN关联组装
+            $this->match($this->model, $relation, $result);
+        } else {
+            $this->eagerlySet($result, $relation, $subRelation, $closure);
+        }
+    }
+
+    /**
+     * 预载入关联查询分支入口
+     *
+     * @param [type] $result
+     * @param string $relation
+     * @param string $subRelation
+     * @param [type] $closure
+     * @param boolean $join
+     * @return void
+     */
+    public function eagerlyRelationResult(&$result, string $relation, string $subRelation, $closure, bool $join = false)
     {
         if( 0 == $this->eagerlyType || $join ) {
             // 模型JOIN关联组装

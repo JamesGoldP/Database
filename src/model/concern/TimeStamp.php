@@ -18,13 +18,13 @@ trait TimeStamp
      * 创建时间字段
      * @var
      */
-    protected $createTime = 'create_time';
+    protected $createTime = 'created_at';
 
     /**
      * 更新时间字段
      * @var
      */
-    protected $updateTime = 'update_time';
+    protected $updateTime = 'updated_at';
 
     /**
      * 更新时间字段
@@ -47,6 +47,6 @@ trait TimeStamp
 
     protected function autoWriteTimestamp($name) 
     {
-        return time();
+        return date('Y-m-d H:i:s');
     }
 }
