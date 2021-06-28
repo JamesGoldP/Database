@@ -3,6 +3,7 @@ namespace zero\model\concern;
 
 use InvalidArgumentException;
 use zero\model\Relation;
+use zero\helper\Str;
 
 trait Attribute
 {
@@ -74,7 +75,11 @@ trait Attribute
             $value = null;
         }
 
-        if($notFound){
+        $method = 'get' . Str::camel($name, true) . 'Attr';
+
+        if( method_exists($this, $method) ) {
+            $value = $this->$method($name, $this->data);
+        } else if($notFound){
             $value = $this->getRelationAttribute($name); 
         }
 
@@ -112,7 +117,7 @@ trait Attribute
             return $this->data[$name];
         } 
         
-        throw new InvalidArgumentException('property doesn\'t exist: ' . static::class . '->' . $name);
+        throw new InvalidArgumentException('The property doesn\'t exist: ' . static::class . '->' . $name);
     }
 
     /**
@@ -120,7 +125,7 @@ trait Attribute
      *
      * @return array
      */
-    public function getChangeData() : array
+    public function getChangeData(): array
     {
       
         if( $this->force ) {
