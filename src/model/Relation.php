@@ -49,4 +49,9 @@ class Relation
             throw new Exception('The method doesn\'t:' . __CLASS__ . '->' . $method);
         }
     }
+
+    public function resultSetBuild($resultSet)
+    {
+        return (new $this->model)->toCollection($resultSet);
+    }
 }

@@ -169,7 +169,7 @@ trait RelationShip
 
             $relationResult = $this->$relation();
             
-            $relationResult->eagerlyRelationResultSet($result, $relation, $subRelation, $closure, $join);
+            $relationResult->eagerlyRelationResultSet($result, $relation, $join);
         }
     }
 

@@ -42,25 +42,34 @@ class HasOne extends OneToOne
      * @param Closure $closure
      * @return void
      */
-    protected function eagerlySet(&$result, string $relation, string $subRelation, $closure)
+    protected function eagerlySet(&$resultSet, string $relation)
     {
         $localKey = $this->localKey;
         $foreignKey = $this->foreignKey;
+        $range = [];
+        
+        foreach($resultSet as $key => $value) {
+            $range[] = $value->$localKey; 
+        }
+       
+        if( !empty($range) ) {
+            
+            $data = $this->eagerlyWhere([
+                [$localKey, 'in', $range],
+            ], $localKey, $relation);
 
-        $this->query->removeWhereField($foreignKey);
+            foreach($resultSet as $key => $value) {
+                if( !isset($data[$value->$localKey]) ) {
+                    $relationModel = null;
+                } else  {
+                    $relationModel = $data[$value->$localKey];
+                    $relationModel->isUpdate(true);
+                }
 
-        $data = $this->eagerlyWhere([
-            [$foreignKey, 'in', $result->$localKey],
-        ], $foreignKey, $relation, $subRelation, $closure);
-
-        if( !isset($data[$result->$localKey]) ) {
-            $relationModel = null;
-        } else  {
-            $relationModel = $data[$result->$localKey];
-            $relationModel->isUpdate(true);
+                $value->setRelation(Str::snake($relation), $relationModel);
+            }
         }
 
-        $result->setRelation(Str::snake($relation), $relationModel);
     }
 
     /**
@@ -72,7 +81,7 @@ class HasOne extends OneToOne
      * @param Closure $closure
      * @return void
      */
-    protected function eagerlyOne(&$result, string $relation, string $subRelation, $closure)
+    protected function eagerlyOne(&$result, string $relation)
     {
         $localKey = $this->localKey;
         $foreignKey = $this->foreignKey;

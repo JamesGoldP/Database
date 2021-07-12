@@ -82,13 +82,13 @@ class OneToOne extends Relation
      * @param boolean $join
      * @return void
      */
-    public function eagerlyRelationResultset(&$result, string $relation, string $subRelation, $closure, bool $join = false)
+    public function eagerlyRelationResultset(&$result, string $relation, bool $join = false)
     {
         if( 0 == $this->eagerlyType || $join ) {
             // 模型JOIN关联组装
             $this->match($this->model, $relation, $result);
         } else {
-            $this->eagerlySet($result, $relation, $subRelation, $closure);
+            $this->eagerlySet($result, $relation);
         }
     }
 
@@ -102,13 +102,13 @@ class OneToOne extends Relation
      * @param boolean $join
      * @return void
      */
-    public function eagerlyRelationResult(&$result, string $relation, string $subRelation, $closure, bool $join = false)
+    public function eagerlyRelationResult(&$result, string $relation, bool $join = false)
     {
         if( 0 == $this->eagerlyType || $join ) {
             // 模型JOIN关联组装
             $this->match($this->model, $relation, $result);
         } else {
-            $this->eagerlyOne($result, $relation, $subRelation, $closure);
+            $this->eagerlyOne($result, $relation);
         }
     }
 
@@ -158,10 +158,10 @@ class OneToOne extends Relation
      * @param Closure $closure
      * @return array
      */
-    protected function eagerlyWhere(array $where, string $key, string $relation, string $subRelation = '', $closure = null) : array
+    protected function eagerlyWhere(array $where, string $key, string $relation) : array
     {
-        $list = $this->query->where($where)->with($subRelation)->select();
-
+        $list = $this->query->where($where)->select();
+        
         $data = [];
 
         foreach ($list as $set) {

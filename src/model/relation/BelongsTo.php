@@ -42,25 +42,33 @@ class BelongsTo extends OneToOne
      * @param Closure $closure
      * @return void
      */
-    protected function eagerlySet(&$result, string $relation, string $subRelation, $closure)
+    protected function eagerlySet(&$resultSet, string $relation)
     {
         $localKey = $this->localKey;
         $foreignKey = $this->foreignKey;
-
-        $this->query->removeWhereField($localKey);
+        $range = [];
         
-        $data = $this->eagerlyWhere([
-            [$localKey, 'in', $result->$foreignKey],
-        ], $localKey, $relation, $subRelation, $closure);
-
-        if( !isset($data[$result->$foreignKey]) ) {
-            $relationModel = null;
-        } else  {
-            $relationModel = $data[$result->$foreignKey];
-            $relationModel->isUpdate(true);
+        foreach($resultSet as $key => $value) {
+            $range[] = $value->$foreignKey; 
         }
 
-        $result->setRelation(Str::snake($relation), $relationModel);
+        if( !empty($range) ) {
+            
+            $data = $this->eagerlyWhere([
+                [$localKey, 'in', $range],
+            ], $localKey, $relation);
+
+            foreach($resultSet as $key => $value) {
+                if( !isset($data[$value->$foreignKey]) ) {
+                    $relationModel = null;
+                } else  {
+                    $relationModel = $data[$value->$foreignKey];
+                    $relationModel->isUpdate(true);
+                }
+
+                $value->setRelation(Str::snake($relation), $relationModel);
+            }
+        }
     }
 
     /**
@@ -72,16 +80,14 @@ class BelongsTo extends OneToOne
      * @param Closure $closure
      * @return void
      */
-    protected function eagerlyOne(&$result, string $relation, string $subRelation, $closure)
+    protected function eagerlyOne(&$result, string $relation)
     {
         $localKey = $this->localKey;
         $foreignKey = $this->foreignKey;
 
-        $this->query->removeWhereField($localKey);
-        
         $data = $this->eagerlyWhere([
             [$localKey, '=', $result->$foreignKey],
-        ], $localKey, $relation, $subRelation, $closure);
+        ], $localKey, $relation);
 
         if( !isset($data[$result->$foreignKey]) ) {
             $relationModel = null;

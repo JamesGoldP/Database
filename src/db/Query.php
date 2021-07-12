@@ -253,11 +253,11 @@ class Query{
         } 
 
         if( $resultSet && !empty($this->options['with']) ) {
-            $result->eagerlyResultSet($result, $this->options['with'], []);
+            $result->eagerlyResultSet($resultSet, $this->options['with'], []);
         }
 
         if( $resultSet && !empty($this->options['with_join']) ) {
-            $result->eagerlyResultSet($result, $this->options['with_join'], [], true);
+            $result->eagerlyResultSet($resultSet, $this->options['with_join'], [], true);
         } 
 
         return $result->toCollection($resultSet);

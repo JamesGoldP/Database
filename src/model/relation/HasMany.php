@@ -33,28 +33,35 @@ class HasMany extends Relation
         return $relationModel;
     }
 
-    public function eagerlyRelationResultSet(&$result, string $relation, string $subRelation, $closure)
+    public function eagerlyRelationResultSet(&$resultSet, string $relation)
     {
         $localKey = $this->localKey;
         $foreignKey = $this->foreignKey;
         $range = [];
         
-        foreach($result as $value) {
-            if( isset($value->$localKey) ) {
-                $range[] = $value->$localKey;
-            }
+        foreach($resultSet as $key => $value) {
+            $range[] = $value->$localKey; 
         }
+       
+        if( !empty($range) ) {
+            
+            $data = $this->eagerlyWhere([
+                [$localKey, 'in', $range],
+            ], $localKey, $relation);
 
-        $this->query->removeWhereField($foreignKey);
-        
-        $data = $this->eagerlyWhere([
-            [$foreignKey, 'in', $range],
-        ], $foreignKey, $relation, $subRelation, $closure);
+            foreach($resultSet as $key => $value) {
+                if( !isset($data[$value->$localKey]) ) {
+                    $relationValue = [];
+                } else  {
+                    $relationValue = $this->resultSetBuild($data[$value->$localKey]);
+                }
 
-        $result->setRelation(Str::snake($relation), $data);
+                $value->setRelation(Str::snake($relation), $relationValue);
+            }
+        };
     }
 
-    public function eagerlyRelationResult(&$result, string $relation, string $subRelation, $closure)
+    public function eagerlyRelationResult(&$result, string $relation)
     {
         $localKey = $this->localKey;
         $foreignKey = $this->foreignKey;
@@ -63,7 +70,7 @@ class HasMany extends Relation
         
         $data = $this->eagerlyWhere([
             [$foreignKey, '=', $result->$localKey],
-        ], $foreignKey, $relation, $subRelation, $closure);
+        ], $foreignKey, $relation);
 
         $result->setRelation(Str::snake($relation), $data);
     }
@@ -78,10 +85,16 @@ class HasMany extends Relation
      * @param Closure $closure
      * @return array
      */
-    protected function eagerlyWhere(array $where, string $key, string $relation, string $subRelation = '', $closure = null)
+    protected function eagerlyWhere(array $where, string $key, string $relation)
     {
-        $list = $this->query->where($where)->with($subRelation)->select();
-       
-        return $list;
+        $list = $this->query->where($where)->select();
+
+        $data = [];
+
+        foreach ($list as $set) {
+            $data[$set->$key][] = $set;   
+        }
+
+        return $data;
     }
 }
