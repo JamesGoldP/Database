@@ -8,6 +8,7 @@ use zero\helper\Str;
 use zero\model\relation\HasOne;
 use zero\model\relation\BelongsTo;
 use zero\model\relation\HasMany;
+use zero\model\relation\HasOneThrough;
 use zero\model\relation\HasOneThroughAnother;
 use zero\model\Relation;
 
@@ -114,12 +115,32 @@ trait RelationShip
         $model = $this->parseModel($model);
         $through = $this->parseModel($through);
         $foreignKey = $foreignKey ?: $this->getForeignKey($this->name);
-        $throughModel = new $through;
-        $throughKey = $throughKey ?: $this->getForeignKey($throughModel->getName());
+        $throughKey = $throughKey ?: $this->getForeignKey( (new $model)->getName());
         $modelPk = (new $model)->getPk();
         $localKey = $this->getPk();
 
         return new HasOneThroughAnother($this, $model, $through, $foreignKey, $throughKey, $localKey, $modelPk);
+    }
+
+    /**
+     * one-to-one relationship with another model
+     *
+     * @param string $model   
+     * @param string $through  
+     * @param string $foreighKey
+     * @param string $throughKey 
+     * @return HasOneThrough
+     */
+    public function hasOneThrough(string $model, string $through, string $foreignKey = '', string $throughKey = '', string $throughPk = ''): HasOneThrough
+    {
+        $model = $this->parseModel($model);
+        $through = $this->parseModel($through);
+        $foreignKey = $foreignKey ?: $this->getForeignKey($this->name);
+        $throughKey = $throughKey ?: $this->getForeignKey((new $through)->getName());
+        $localKey = $this->getPk();
+        $throughPk = $throughPk ?: (new $through)->getPk();
+
+        return new HasOneThrough($this, $model, $through, $foreignKey, $throughKey, $localKey, $throughPk);
     }
 
     /**
