@@ -1,10 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: PengYilong
- * Date: 2018/10/27
- * Time: 2:07 AM
- */
+declare(strict_types = 1);
 
 namespace zero\db;
 use Exception;

@@ -1,10 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: PengYilong
- * Date: 2018/9/10
- * Time: 1:37 PM
- */
+declare(strict_types = 1);
 
 namespace zero;
 

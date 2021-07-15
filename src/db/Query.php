@@ -1,10 +1,5 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: PengYilong
- * Date: 2018/10/14
- * Time: 1:09 PM
- */
+declare(strict_types = 1);
 
 namespace zero\db;
 
@@ -354,6 +349,19 @@ class Query{
     }
 
     /**
+     * Returns an array containing all of the result set rows
+     *
+     */
+    public function column(string $field, string $key)
+    {
+        $this->parseOptions();
+
+        $resultSet = $this->connection->column($this, $field, $key);
+
+        return $resultSet;
+    }
+
+    /**
      * set data
      *
      * @param [type] $field
@@ -619,6 +627,8 @@ class Query{
         
         if( is_array($data) ){
             $where[$pk] = isset($data[$pk]) ? [$key, '=', $data[$pk]] : [$key, 'in', $data];
+        } elseif( is_int($data) ){
+            $where[$pk] = [$key, '=', $data]; 
         } else {
             $where[$pk] = strpos($data, ',') ? [$key, 'IN', $data] : [$key, '=', $data];
         }
@@ -632,7 +642,7 @@ class Query{
         }
     }
 
-    public function getPk($options = '')
+    public function getPk($options = ''): string
     {
         if( !empty($this->pk) ){
             $pk = $this->pk;

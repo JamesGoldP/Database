@@ -1,4 +1,6 @@
 <?php
+declare(strict_types = 1);
+
 namespace zero;
 
 use zero\db\Query;
@@ -116,6 +118,11 @@ class Model implements \ArrayAccess, \Countable
         $class = end($arr);
         return $class;
     }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
     
     /**
      * 
@@ -156,7 +163,7 @@ class Model implements \ArrayAccess, \Countable
         // 软删除
         if( property_exists($this, 'withTrashed') && !$this->withTrashed ) {
             $this->withNoTrased($query);
-        } 
+        }
 
         return $query;
     }

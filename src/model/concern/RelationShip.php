@@ -1,4 +1,6 @@
 <?php
+declare(strict_types = 1);
+
 namespace zero\model\concern;
 
 use zero\Db;
@@ -6,6 +8,7 @@ use zero\helper\Str;
 use zero\model\relation\HasOne;
 use zero\model\relation\BelongsTo;
 use zero\model\relation\HasMany;
+use zero\model\relation\HasOneThroughAnother;
 use zero\model\Relation;
 
 trait RelationShip
@@ -50,7 +53,7 @@ trait RelationShip
      * @param string $localKey     当前模型主键(id)
      * @return 
      */
-    public function hasOne($model, string $foreignKey = '', string $localKey = '')
+    public function hasOne(string $model, string $foreignKey = '', string $localKey = ''): HasOne
     {
         //获取默认信息
         $model      = $this->parseModel($model);
@@ -68,13 +71,13 @@ trait RelationShip
      * @param string $localKey     关联模型主键(id)   
      * @return 
      */   
-    public function belongsTo($model, string $foreignKey = '', string $localKey = '')
+    public function belongsTo(string $model, string $foreignKey = '', string $localKey = ''): BelongsTo
     {
         //获取默认信息
-        $model      = $this->parseModel($model);
+        $model       = $this->parseModel($model);
         $modelInited = new $model;
-        $foreignKey = $foreignKey ?: $this->getForeignKey($modelInited->name);
-        $localKey   = $localKey ?: $modelInited->pk;
+        $foreignKey  = $foreignKey ?: $this->getForeignKey($modelInited->name);
+        $localKey    = $localKey ?: $modelInited->pk;
 
         return new BelongsTo($this, $model, $foreignKey, $localKey);
     }
@@ -87,7 +90,7 @@ trait RelationShip
      * @param string $localKey     当前模型主键   
      * @return 
      */
-    public function hasMany($model, string $foreignKey = '', string $localKey = '')
+    public function hasMany(string $model, string $foreignKey = '', string $localKey = ''): HasMany
     {
         //获取默认信息
         $model      = $this->parseModel($model);
@@ -95,6 +98,28 @@ trait RelationShip
         $localKey   = $localKey ?: $this->pk;
 
         return new HasMany($this, $model, $foreignKey, $localKey);
+    }
+
+    /**
+     * one-to-one relationship with another model
+     *
+     * @param string $model   关联模型
+     * @param string $through  中间模型
+     * @param string $foreighKey
+     * @param string $throughKey 中间表关联键
+     * @return HasOneThroughAnother
+     */
+    public function hasOneThroughAnother(string $model, string $through, string $foreignKey = '', string $throughKey = ''): HasOneThroughAnother
+    {
+        $model = $this->parseModel($model);
+        $through = $this->parseModel($through);
+        $foreignKey = $foreignKey ?: $this->getForeignKey($this->name);
+        $throughModel = new $through;
+        $throughKey = $throughKey ?: $this->getForeignKey($throughModel->getName());
+        $modelPk = (new $model)->getPk();
+        $localKey = $this->getPk();
+
+        return new HasOneThroughAnother($this, $model, $through, $foreignKey, $throughKey, $localKey, $modelPk);
     }
 
     /**
@@ -128,6 +153,7 @@ trait RelationShip
             array_push($path, Str::camel($model, true));
             $model = implode('\\', $path);
         }
+        
         return $model;
     }
 
@@ -195,7 +221,7 @@ trait RelationShip
 
             $relationResult = $this->$relation();
             
-            $relationResult->eagerlyRelationResult($result, $relation, $subRelation, $closure, $join);
+            $relationResult->eagerlyRelationResult($result, $relation, $join);
         }
     }
 }

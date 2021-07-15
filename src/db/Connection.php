@@ -1,4 +1,6 @@
 <?php
+declare(strict_types = 1);
+
 namespace zero\db;
 
 use PDO;
@@ -255,7 +257,7 @@ abstract class Connection
      *
      * @return void
      */
-    protected function getResult() : array
+    protected function getResult(): array
     {
         $result = $this->statement->fetchAll($this->fetchType);
         $this->numRows = count($result);
@@ -280,6 +282,30 @@ abstract class Connection
         $result = $this->query($sql, $query->bind);
 		return $result;	
 	}
+
+    /**
+     * Undocumented function
+     *
+     * @param Query $query
+     * @param string $field
+     * @param string $key
+     * @return void
+     */
+    public function column(Query $query, string $field, string $key = '')
+    {
+        $options = $query->getOptions();
+		$sql = $this->builder->select($query);
+        
+        if( $options['fetch_sql'] ){
+            return $this->getRealSql($sql, $query->bind);
+        }
+
+        $result = $this->query($sql, $query->bind);
+
+        $columnResult = array_column($result, $field, $key);
+
+        return $columnResult; 
+    }
 
     /**
      * get one record

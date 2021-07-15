@@ -1,4 +1,6 @@
 <?php
+declare(strict_types = 1);
+
 namespace zero\model\relation;
 
 use zero\Model;
@@ -61,18 +63,31 @@ class HasMany extends Relation
         };
     }
 
-    public function eagerlyRelationResult(&$result, string $relation)
+    /**
+     * Undocumented function
+     *
+     * @param Model $result
+     * @param string $relation
+     * @param string $subRelation
+     * @param Closure $closure
+     * @return void
+     */
+    protected function eagerlyOne(&$result, string $relation)
     {
         $localKey = $this->localKey;
         $foreignKey = $this->foreignKey;
 
-        $this->query->removeWhereField($foreignKey);
-        
         $data = $this->eagerlyWhere([
             [$foreignKey, '=', $result->$localKey],
-        ], $foreignKey, $relation);
+        ], $foreignKey, $relation, $subRelation, $closure);
 
-        $result->setRelation(Str::snake($relation), $data);
+        if( !isset($data[$result->$localKey]) ) {
+            $relationModel = null;
+        } else  {
+            $relationModel = $data[$result->$localKey];
+        }
+
+        $result->setRelation(Str::snake($relation), $relationModel);
     }
 
     /**
@@ -87,7 +102,9 @@ class HasMany extends Relation
      */
     protected function eagerlyWhere(array $where, string $key, string $relation)
     {
-        $list = $this->query->where($where)->select();
+        $list = $this->query->field($this->throughPk)->where($where)->select();
+        p($list);
+        exit();
 
         $data = [];
 
